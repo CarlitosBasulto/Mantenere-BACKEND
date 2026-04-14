@@ -1,0 +1,5 @@
+
+   INFO  Rolling back migrations.  
+
+  2026_04_09_030308_create_mantenimiento_reportes_table  67.73ms DONE
+

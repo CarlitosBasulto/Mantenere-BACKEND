@@ -4,55 +4,118 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cotizacion;
+use App\Models\Trabajo;
+use App\Mail\NuevaCotizacionMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class CotizacionController extends Controller
 {
-    // 🔍 1. Obtener la cotización de un trabajo
+    // 🔍 1. Obtener TODAS las cotizaciones de un trabajo (array)
     public function showByTrabajo($trabajo_id)
     {
-        $cotizacion = Cotizacion::where('trabajo_id', $trabajo_id)->first();
-        
-        if (!$cotizacion) {
-            return response()->json(['message' => 'No hay cotización para este trabajo'], 404);
-        }
+        $cotizaciones = Cotizacion::where('trabajo_id', $trabajo_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        return response()->json($cotizacion);
+        return response()->json($cotizaciones);
     }
 
-    // ➕ 2. Crear o actualizar la cotización (Desde el Administrador)
+    // ➕ 2. Crear una NUEVA cotización (permite múltiples por trabajo)
     public function store(Request $request)
     {
         $request->validate([
             'trabajo_id' => 'required|exists:trabajos,id',
-            'monto' => 'required|numeric',
-            'archivo' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Valida el archivo
+            'monto'      => 'required|numeric',
+            'archivo'    => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        // Lógica para guardar el archivo en Storage de Laravel
         $pathArchivo = null;
         if ($request->hasFile('archivo')) {
-            // Se guardará en storage/app/public/cotizaciones
             $pathArchivo = $request->file('archivo')->store('cotizaciones', 'public');
         }
 
-        $cotizacion = Cotizacion::updateOrCreate(
-            ['trabajo_id' => $request->trabajo_id],
-            [
-                'descripcion' => $request->descripcion,
-                'monto' => $request->monto,
-                'estado' => $request->estado ?? 'Pendiente',
-                'archivo' => $pathArchivo // <-- ¡NUEVO!
-            ]
-        );
+        $cotizacion = Cotizacion::create([
+            'trabajo_id'  => $request->trabajo_id,
+            'descripcion' => $request->descripcion,
+            'monto'       => $request->monto,
+            'estado'      => 'Pendiente',
+            'archivo'     => $pathArchivo,
+        ]);
+
+        $this->enviarNotificacionCliente($cotizacion);
 
         return response()->json([
-            'message' => 'Cotización creada/actualizada exitosamente',
-            'data' => $cotizacion
+            'message' => 'Cotización creada exitosamente.',
+            'data'    => $cotizacion
         ], 201);
     }
 
-    // ✅❌ 3. Cambiar estado de la cotización (Aprobar o Rechazar desde el Cliente)
+    private function enviarNotificacionCliente(Cotizacion $cotizacion)
+    {
+        try {
+            $trabajo = Trabajo::with('negocio.user')->find($cotizacion->trabajo_id);
+            
+            if ($trabajo && $trabajo->negocio) {
+                // 1. Intentar con el correo específico de la sucursal/negocio
+                // 2. Fallback al correo del dueño (usuario)
+                $destinatario = $trabajo->negocio->correo ?? ($trabajo->negocio->user->email ?? null);
+
+                if ($destinatario) {
+                    Mail::to($destinatario)->send(new NuevaCotizacionMail($cotizacion));
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error enviando correo de cotización: ' . $e->getMessage());
+        }
+    }
+
+    // ✏️ 3. Editar una cotización existente (Admin)
+    public function update(Request $request, $id)
+    {
+        $cotizacion = Cotizacion::find($id);
+
+        if (!$cotizacion) {
+            return response()->json(['message' => 'Cotización no encontrada.'], 404);
+        }
+
+        $request->validate([
+            'monto'   => 'sometimes|numeric',
+            'archivo' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $pathArchivo = $cotizacion->archivo;
+        if ($request->hasFile('archivo')) {
+            $pathArchivo = $request->file('archivo')->store('cotizaciones', 'public');
+        }
+
+        $cotizacion->update([
+            'descripcion' => $request->descripcion ?? $cotizacion->descripcion,
+            'monto'       => $request->monto ?? $cotizacion->monto,
+            'archivo'     => $pathArchivo,
+        ]);
+
+        return response()->json([
+            'message' => 'Cotización actualizada correctamente.',
+            'data'    => $cotizacion->fresh()
+        ]);
+    }
+
+    // 🗑️ 4. Eliminar una cotización (Admin)
+    public function destroy($id)
+    {
+        $cotizacion = Cotizacion::find($id);
+
+        if (!$cotizacion) {
+            return response()->json(['message' => 'Cotización no encontrada.'], 404);
+        }
+
+        $cotizacion->delete();
+
+        return response()->json(['message' => 'Cotización eliminada correctamente.'], 200);
+    }
+
+    // ✅❌ 5. Cambiar estado individual (Aprobar o Rechazar — desde el Cliente)
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
@@ -62,30 +125,33 @@ class CotizacionController extends Controller
         $cotizacion = Cotizacion::find($id);
 
         if (!$cotizacion) {
-            return response()->json(['message' => 'Cotización no encontrada'], 404);
+            return response()->json(['message' => 'Cotización no encontrada.'], 404);
         }
 
         $cotizacion->update(['estado' => $request->estado]);
 
-        // Si la cotización fue aprobada, actualizamos el estado del Trabajo
-        // y reseteamos el trabajador_id para que el Admin asigne al técnico de reparación.
+        // Si se aprueba una cotización, actualizar el estado del trabajo.
+        // Las demás cotizaciones permanecen con su estado actual.
         if ($request->estado === 'Aprobada') {
-            // Aseguramos cargar el modelo de Trabajo
             $trabajo = \App\Models\Trabajo::find($cotizacion->trabajo_id);
             if ($trabajo) {
                 $trabajo->estado = 'Cotización Aprobada';
-                $trabajo->trabajador_id = null; // Liberar para reasignar
-                $trabajo->visitado = false; // Ocultar el aviso de visita de diagnóstico en el Frontend
+                $trabajo->trabajador_id = null;
+                $trabajo->visitado = false;
                 $trabajo->save();
+
+                // Check if this work is a Maintenance Visit
+                $mantenimiento = \App\Models\MantenimientoSolicitud::where('visita_trabajo_id', $trabajo->id)->first();
+                if ($mantenimiento) {
+                    $mantenimiento->estado = 'Cotización Aceptada';
+                    $mantenimiento->save();
+                }
             }
         }
 
         return response()->json([
-            'message' => 'El estado ha sido actualizado a ' . $request->estado,
-            'data' => $cotizacion
+            'message' => 'Estado actualizado a ' . $request->estado,
+            'data'    => $cotizacion->fresh()
         ]);
     }
-    
-    // 🔍 4. (Opcional) Obtener todas las cotizaciones de un cliente en específico para su listado
-    // Se utilizaría cruzando los trabajos con negocio_id -> user_id, pero se puede añadir luego.
 }

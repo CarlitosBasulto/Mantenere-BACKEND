@@ -16,11 +16,18 @@ class UserController extends Controller
     {
         $authUser = $request->user();
 
-        $users = User::with('role')
+        $users = User::with(['role', 'trabajador'])
             ->whereHas('role', function ($query) use ($authUser) {
                 $query->where('hierarchy_level', '>=', $authUser->role->hierarchy_level);
             })
-            ->get();
+            ->get()
+            ->map(function ($user) {
+                // Si el usuario no tiene avatar directo, lo toma del trabajador si existe
+                if (!$user->avatar && $user->trabajador) {
+                    $user->avatar = $user->trabajador->avatar;
+                }
+                return $user;
+            });
 
         return response()->json($users);
     }
@@ -95,7 +102,11 @@ class UserController extends Controller
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'password' => 'sometimes|min:6',
             'role_id' => 'sometimes|exists:roles,id',
-            'active' => 'sometimes|boolean'
+            'active' => 'sometimes|boolean',
+            'telefono' => 'nullable|string',
+            'rfc' => 'nullable|string',
+            'razon_social' => 'nullable|string',
+            'direccion_fiscal' => 'nullable|string',
         ]);
 
         // 🔥 Si intenta cambiar el rol
@@ -141,6 +152,22 @@ class UserController extends Controller
 
         if ($request->has('active')) {
             $user->active = $request->active;
+        }
+
+        if ($request->has('telefono')) {
+            $user->telefono = $request->telefono;
+        }
+
+        if ($request->has('rfc')) {
+            $user->rfc = $request->rfc;
+        }
+
+        if ($request->has('razon_social')) {
+            $user->razon_social = $request->razon_social;
+        }
+
+        if ($request->has('direccion_fiscal')) {
+            $user->direccion_fiscal = $request->direccion_fiscal;
         }
 
         $user->save();

@@ -97,5 +97,38 @@ class TrabajadorController extends Controller
         return response()->json($trabajador);
     }
 
+    // 🔄 ACTUALIZAR datos del trabajador (Mi Perfil)
+    public function update(Request $request, $id)
+    {
+        $trabajador = Trabajador::find($id);
+
+        if (!$trabajador) {
+            return response()->json(['message' => 'No encontrado'], 404);
+        }
+
+        $request->validate([
+            'nombre' => 'sometimes|string',
+            'correo' => 'sometimes|email|unique:users,email,' . ($trabajador->user_id ?? 0),
+            'telefono' => 'nullable|string',
+            'avatar' => 'nullable|string',
+            'puesto' => 'sometimes|string'
+        ]);
+
+        $trabajador->update($request->all());
+
+        // Si el trabajador tiene un usuario vinculado, sincronizar datos básicos
+        if ($trabajador->user) {
+            if ($request->has('nombre')) $trabajador->user->name = $request->nombre;
+            if ($request->has('correo')) $trabajador->user->email = $request->correo;
+            if ($request->has('avatar')) $trabajador->user->avatar = $request->avatar;
+            $trabajador->user->save();
+        }
+
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente',
+            'data' => $trabajador
+        ]);
+    }
+
 
 }

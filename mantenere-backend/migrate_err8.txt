@@ -1,0 +1,26 @@
+
+   INFO  Running migrations.  
+
+  2026_04_09_050618_create_equipo_historial_refaccions_table  119.45ms FAIL
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[HY000]: General error: 1824 Failed to open the referenced table 'actividads' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: Mantenere, SQL: alter table `equipo_historial_refaccions` add constraint `equipo_historial_refaccions_actividad_id_foreign` foreign key (`actividad_id`) references `actividads` (`id`) on delete cascade)
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:838
+    834▕             $exceptionType = $this->isUniqueConstraintError($e)
+    835▕                 ? UniqueConstraintViolationException::class
+    836▕                 : QueryException::class;
+    837▕ 
+  ➜ 838▕             throw new $exceptionType(
+    839▕                 $this->getNameWithReadWriteType(),
+    840▕                 $query,
+    841▕                 $this->prepareBindings($bindings),
+    842▕                 $e,
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+      PDOException::("SQLSTATE[HY000]: General error: 1824 Failed to open the referenced table 'actividads'")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+      PDOStatement::execute()
+

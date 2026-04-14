@@ -1,0 +1,26 @@
+
+   INFO  Running migrations.  
+
+  2026_04_09_050618_create_equipo_historial_refaccions_table  12.07ms FAIL
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'equipo_historial_refaccions' already exists (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: Mantenere, SQL: create table `equipo_historial_refaccions` (`id` bigint unsigned not null auto_increment primary key, `actividad_id` bigint unsigned not null, `levantamiento_equipo_id` bigint unsigned null, `pieza` varchar(255) not null, `cantidad` int not null default '1', `costo_estimado` decimal(10, 2) null, `created_at` timestamp null, `updated_at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode_ci')
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:838
+    834▕             $exceptionType = $this->isUniqueConstraintError($e)
+    835▕                 ? UniqueConstraintViolationException::class
+    836▕                 : QueryException::class;
+    837▕ 
+  ➜ 838▕             throw new $exceptionType(
+    839▕                 $this->getNameWithReadWriteType(),
+    840▕                 $query,
+    841▕                 $this->prepareBindings($bindings),
+    842▕                 $e,
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+      PDOException::("SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'equipo_historial_refaccions' already exists")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+      PDOStatement::execute()
+

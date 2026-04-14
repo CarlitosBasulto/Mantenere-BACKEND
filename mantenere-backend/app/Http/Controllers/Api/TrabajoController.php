@@ -20,7 +20,7 @@ class TrabajoController extends Controller
     // 🔍 VER UN TRABAJO ESPECÍFICO
     public function show($id)
     {
-        $trabajo = Trabajo::with(['trabajador', 'negocio', 'reporte'])->find($id);
+        $trabajo = Trabajo::with(['trabajador', 'negocio', 'reporte', 'mantenimientoSolicitudVisita.levantamientoEquipo', 'mantenimientoSolicitudReparacion.levantamientoEquipo'])->find($id);
 
         if (!$trabajo) {
             return response()->json(['message' => 'Trabajo no encontrado'], 404);
@@ -57,14 +57,14 @@ class TrabajoController extends Controller
     public function asignarTrabajador(Request $request, $id)
     {
         $request->validate([
-            'trabajador_id' => 'required|exists:trabajadores,id'
+            'trabajador_id' => 'nullable|exists:trabajadores,id'
         ]);
 
         $trabajo = Trabajo::findOrFail($id);
         $trabajo->trabajador_id = $request->trabajador_id;
 
         // Opcional: Si se asigna alguien, pasarlo a "En proceso"
-        if ($trabajo->estado === 'Pendiente') {
+        if ($request->trabajador_id && $trabajo->estado === 'Pendiente') {
             $trabajo->estado = 'En proceso';
         }
 
@@ -72,6 +72,35 @@ class TrabajoController extends Controller
 
         return response()->json($trabajo);
     }
+
+    // 🔄 ACTUALIZACIÓN GENERAL DEL TRABAJO
+    public function update(Request $request, $id)
+    {
+        $trabajo = Trabajo::findOrFail($id);
+        
+        // Validación dinámica de campos que pueden venir en el JSON
+        $data = $request->validate([
+            'titulo' => 'sometimes|string',
+            'descripcion' => 'sometimes|nullable|string',
+            'prioridad' => 'sometimes|in:Alta,Media,Baja',
+            'estado' => 'sometimes|string',
+            'tipo' => 'sometimes|nullable|string',
+            'fechaAsignada' => 'sometimes|nullable|date',
+            'horaAsignada' => 'sometimes|nullable|string',
+            'visitado' => 'sometimes|boolean',
+            'trabajador_id' => 'sometimes|nullable|exists:trabajadores,id',
+            'fecha_programada' => 'sometimes|nullable|date',
+        ]);
+
+        $trabajo->update($data);
+
+        return response()->json([
+            'message' => 'Trabajo actualizado con éxito.',
+            'trabajo' => $trabajo->load(['trabajador', 'negocio'])
+        ]);
+    }
+
+    // 🔄 CAMBIAR EL ESTADO DEL TRABAJO
 
     // 🔄 CAMBIAR EL ESTADO DEL TRABAJO
     public function cambiarEstado(Request $request, $id)

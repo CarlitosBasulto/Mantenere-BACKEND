@@ -16,7 +16,8 @@ class ReporteController extends Controller
         $reporte = Reporte::with('imagenes')->where('trabajo_id', $trabajo_id)->first();
 
         if (!$reporte) {
-            return response()->json(['message' => 'Reporte no encontrado'], 404);
+            // Return 200 with null to prevent browser console errors for uncreated reports
+            return response()->json(null, 200);
         }
 
         return response()->json($reporte);

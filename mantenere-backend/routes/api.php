@@ -1,13 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+Route::get('/drop-table', function() {
+    \Illuminate\Support\Facades\Schema::dropIfExists('equipo_historial_refaccions');
+    \Illuminate\Support\Facades\DB::table('migrations')->where('migration', 'like', '%equipo_historial_refaccions%')->delete();
+    return "Dropped";
+});
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\TrabajadorController;
 use App\Http\Controllers\Api\NegocioController;
+use App\Http\Controllers\Api\ImageController;
 use App\Http\Controllers\Api\TrabajoController;
 use App\Http\Controllers\ActividadController; // <-- FIJATE QUE YA NO DICE \Api\
-
+use App\Http\Controllers\Api\MantenimientoSolicitudController;
 
 /*Route::post('/ping', function () {
  return response()->json(['pong' => true]); });*/
@@ -36,12 +43,14 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class , 'log
 Route::get('/trabajadores', [TrabajadorController::class , 'index']);
 Route::get('/trabajadores/{id}', [TrabajadorController::class , 'show']);
 Route::post('/trabajadores', [TrabajadorController::class , 'store']);
+Route::put('/trabajadores/{id}', [TrabajadorController::class , 'update']);
 Route::patch('/trabajadores/{id}/estado', [TrabajadorController::class , 'toggleEstado']);
 
 // 🛠️ RUTAS DE TRABAJOS
 Route::get('/trabajos', [App\Http\Controllers\Api\TrabajoController::class , 'index']);
 Route::post('/trabajos', [App\Http\Controllers\Api\TrabajoController::class , 'store']);
 Route::get('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'show']);
+Route::put('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'update']);
 Route::put('/trabajos/{id}/asignar', [App\Http\Controllers\Api\TrabajoController::class , 'asignarTrabajador']);
 Route::put('/trabajos/{id}/estado', [App\Http\Controllers\Api\TrabajoController::class , 'cambiarEstado']);
 
@@ -59,7 +68,9 @@ Route::post('/reportes', [App\Http\Controllers\Api\ReporteController::class , 's
 // 💰 RUTAS DE COTIZACIONES
 Route::get('/cotizaciones/trabajo/{trabajo_id}', [App\Http\Controllers\Api\CotizacionController::class , 'showByTrabajo']);
 Route::post('/cotizaciones', [App\Http\Controllers\Api\CotizacionController::class , 'store']);
+Route::put('/cotizaciones/{id}', [App\Http\Controllers\Api\CotizacionController::class , 'update']);
 Route::put('/cotizaciones/{id}/estado', [App\Http\Controllers\Api\CotizacionController::class , 'updateStatus']);
+Route::delete('/cotizaciones/{id}', [App\Http\Controllers\Api\CotizacionController::class , 'destroy']);
 
 // 🔔 RUTAS DE NOTIFICACIONES
 Route::get('/notificaciones/usuario/{user_id}', [App\Http\Controllers\Api\NotificacionController::class , 'indexByUsuario']);
@@ -73,3 +84,13 @@ Route::post('/checklist', [App\Http\Controllers\Api\ChecklistEquipoController::c
 
 Route::post('/actividades', [ActividadController::class , 'store']);
 Route::get('/trabajos/{id}/actividades', [ActividadController::class , 'getByTrabajo']);
+Route::delete('/actividades/{id}', [ActividadController::class , 'destroy']);
+
+// 🛠️ RUTAS DE SOLICITUDES DE MANTENIMIENTO
+    Route::get('/mantenimiento-solicitudes', [MantenimientoSolicitudController::class, 'index']);
+    Route::post('/mantenimiento-solicitudes', [MantenimientoSolicitudController::class, 'store']);
+    Route::get('/mantenimiento-solicitudes/{id}', [MantenimientoSolicitudController::class, 'show']);
+    Route::post('/mantenimiento-solicitudes/{id}/asignar-visita', [MantenimientoSolicitudController::class, 'asignarVisita']);
+    Route::post('/mantenimiento-solicitudes/{id}/asignar-reparacion', [MantenimientoSolicitudController::class, 'asignarReparacion']);
+// 🖼️ RUTA PARA SUBIDA DE IMÁGENES GENÉRICA
+Route::post('/upload-imagen', [ImageController::class, 'upload']);

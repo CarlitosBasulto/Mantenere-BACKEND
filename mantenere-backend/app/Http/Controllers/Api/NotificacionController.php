@@ -11,25 +11,29 @@ class NotificacionController extends Controller
     // 🔔 1. Obtener todas las notificaciones de un usuario
     public function indexByUsuario($user_id)
     {
-        // Traemos las notificaciones del usuario, ordenadas por más reciente
         $notificaciones = Notificacion::where('user_id', $user_id)
             ->orderBy('created_at', 'desc')
+            ->limit(30) // Limitamos a las últimas 30 por rendimiento
             ->get();
 
         return response()->json($notificaciones);
     }
 
-    // 📩 2. Crear una nueva notificación (Este método lo usarás desde PHP cuando algo suceda, o si React quiere disparar una)
+    // 📩 2. Crear una nueva notificación
     public function store(Request $request)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
+            'titulo' => 'required|string',
             'mensaje' => 'required|string',
+            'enlace' => 'nullable|string',
         ]);
 
         $notificacion = Notificacion::create([
             'user_id' => $request->user_id,
+            'titulo' => $request->titulo,
             'mensaje' => $request->mensaje,
+            'enlace' => $request->enlace,
             'leido' => false
         ]);
 
@@ -51,13 +55,49 @@ class NotificacionController extends Controller
         ]);
     }
 
-    // 🧹 4. (Opcional pero recomendado para el Menu.tsx) Marcar TODAS las de un usuario como leídas
+    // 🧹 4. Marcar TODAS las de un usuario como leídas
     public function markAllAsRead($user_id)
     {
-        Notificacion::where('user_id', $user_id)->update(['leido' => true]);
+        Notificacion::where('user_id', $user_id)
+            ->where('leido', false)
+            ->update(['leido' => true]);
 
         return response()->json([
             'message' => 'Todas las notificaciones fueron marcadas como leídas'
+        ]);
+    }
+
+    /**
+     * 📣 5. Notificar a todos los usuarios de un ROL específico (p.ej. 'admin')
+     * Útil para notificar a todos los jefes cuando un técnico termina algo.
+     */
+    public function notifyByRole(Request $request)
+    {
+        $request->validate([
+            'role' => 'required|string|exists:roles,name',
+            'titulo' => 'required|string',
+            'mensaje' => 'required|string',
+            'enlace' => 'nullable|string',
+        ]);
+
+        $users = \App\Models\User::whereHas('role', function($query) use ($request) {
+            $query->where('name', $request->role);
+        })->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notificacion::create([
+                'user_id' => $user->id,
+                'titulo' => $request->titulo,
+                'mensaje' => $request->mensaje,
+                'enlace' => $request->enlace,
+                'leido' => false
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Notificaciones enviadas al rol ' . $request->role,
+            'count' => count($notifications)
         ]);
     }
 }
