@@ -75,6 +75,7 @@ Route::delete('/cotizaciones/{id}', [App\Http\Controllers\Api\CotizacionControll
 // 🔔 RUTAS DE NOTIFICACIONES
 Route::get('/notificaciones/usuario/{user_id}', [App\Http\Controllers\Api\NotificacionController::class , 'indexByUsuario']);
 Route::post('/notificaciones', [App\Http\Controllers\Api\NotificacionController::class , 'store']);
+Route::post('/notificaciones/rol', [App\Http\Controllers\Api\NotificacionController::class , 'notifyByRole']);
 Route::put('/notificaciones/{id}/leer', [App\Http\Controllers\Api\NotificacionController::class , 'markAsRead']);
 Route::put('/notificaciones/usuario/{user_id}/leer-todas', [App\Http\Controllers\Api\NotificacionController::class , 'markAllAsRead']);
 

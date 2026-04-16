@@ -44,41 +44,5 @@ class DatabaseSeeder extends Seeder
                 'role_id' => 2, // cliente
             ]
         );
-
-        User::updateOrCreate(
-            ['email' => 'cliente2@mantenere.com'],
-            [
-                'name' => 'Cliente 2',
-                'password' => Hash::make('cliente123'),
-                'role_id' => 2, // cliente
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'cliente3@mantenere.com'],
-            [
-                'name' => 'Cliente 3',
-                'password' => Hash::make('cliente123'),
-                'role_id' => 2, // cliente
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'cliente4@mantenere.com'],
-            [
-                'name' => 'Cliente 4',
-                'password' => Hash::make('cliente123'),
-                'role_id' => 2, // cliente
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'trabajador@mantenere.com'],
-            [
-                'name' => 'Trabajador',
-                'password' => Hash::make('trabajador123'),
-                'role_id' => 3, // trabajador
-            ]
-        );
     }
 }
