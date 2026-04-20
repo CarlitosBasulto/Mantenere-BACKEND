@@ -154,6 +154,10 @@ class MantenimientoSolicitudController extends Controller
             return response()->json(['message' => 'La solicitud no tiene una cotización aceptada.'], 400);
         }
 
+        if ($solicitud->reparacion_trabajo_id !== null) {
+            return response()->json(['message' => 'Ya se ha asignado un trabajo de reparación para esta solicitud.'], 400);
+        }
+
         $trabajador = \App\Models\Trabajador::where('user_id', $request->tecnico_id)->first();
         if (!$trabajador) {
             return response()->json(['message' => 'El técnico asignado no existe como trabajador.'], 400);
@@ -169,13 +173,13 @@ class MantenimientoSolicitudController extends Controller
             'negocio_id' => $solicitud->negocio_id,
             'estado' => 'Asignado',
             'user_id' => $request->tecnico_id,
-            'prioridad' => 'Alta',
+            'prioridad' => 'Alta', // Alta hace que en el frontend actúe como SOS (Alerta)
             'tipo' => 'Trabajo',
             'visitado' => false,
         ]);
 
-        // Actualizar solicitud
-        $solicitud->estado = 'Reparación Asignada';
+        // Actualizar solicitud con el ESTADO ENUM CORRECTO: "Trabajo Asignado"
+        $solicitud->estado = 'Trabajo Asignado';
         $solicitud->reparacion_trabajo_id = $trabajo->id;
         $solicitud->save();
 
