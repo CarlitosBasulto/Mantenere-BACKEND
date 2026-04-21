@@ -17,6 +17,7 @@ class UserController extends Controller
         $authUser = $request->user();
 
         $users = User::with(['role', 'trabajador'])
+            ->where('id', '!=', $authUser->id)
             ->whereHas('role', function ($query) use ($authUser) {
                 $query->where('hierarchy_level', '>=', $authUser->role->hierarchy_level);
             })
