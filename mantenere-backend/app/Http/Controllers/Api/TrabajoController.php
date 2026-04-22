@@ -13,7 +13,7 @@ class TrabajoController extends Controller
     public function index()
     {
         return response()->json(
-            Trabajo::with(['trabajador', 'negocio'])->orderBy('created_at', 'desc')->get()
+            Trabajo::with(['trabajador', 'negocio', 'reporte'])->orderBy('created_at', 'desc')->get()
         );
     }
 
