@@ -27,13 +27,21 @@ class AuthController extends Controller
 
         $token = $user->createToken('api-token')->plainTextToken;
 
+        // Normalizar el nombre del rol para el frontend:
+        // Sub-Admin se trata como "admin" para que vea el mismo menú.
+        // La diferencia de permisos se controla en el backend por hierarchy_level.
+        $roleName = strtolower($user->role->name);
+        if ($roleName === 'sub-admin') {
+            $roleName = 'admin';
+        }
+
         return response()->json([
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
+            'user'  => [
+                'id'    => $user->id,
+                'name'  => $user->name,
                 'email' => $user->email,
-                'role' => $user->role->name // 🔥 aquí mandamos string
+                'role'  => $roleName,
             ]
         ]);
     }

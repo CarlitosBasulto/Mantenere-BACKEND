@@ -15,11 +15,18 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $authUser = $request->user();
+        $myLevel  = $authUser->role->hierarchy_level;
 
         $users = User::with(['role', 'trabajador'])
             ->where('id', '!=', $authUser->id)
-            ->whereHas('role', function ($query) use ($authUser) {
-                $query->where('hierarchy_level', '>=', $authUser->role->hierarchy_level);
+            ->whereHas('role', function ($query) use ($myLevel) {
+                // Root y Admin (level <= 1): ven su mismo nivel y todos los inferiores (>=)
+                // Sub-Admin y más bajos (level > 1): solo ven niveles estrictamente inferiores (>)
+                if ($myLevel <= 1) {
+                    $query->where('hierarchy_level', '>=', $myLevel);
+                } else {
+                    $query->where('hierarchy_level', '>', $myLevel);
+                }
             })
             ->get()
             ->map(function ($user) {
