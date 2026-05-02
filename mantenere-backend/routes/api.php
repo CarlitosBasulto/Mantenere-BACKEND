@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ImageController;
 use App\Http\Controllers\Api\TrabajoController;
 use App\Http\Controllers\ActividadController; // <-- FIJATE QUE YA NO DICE \Api\
 use App\Http\Controllers\Api\MantenimientoSolicitudController;
+use App\Http\Controllers\Api\PasswordResetController;
 
 /*Route::post('/ping', function () {
  return response()->json(['pong' => true]); });*/
@@ -36,6 +37,9 @@ Route::middleware(['auth:sanctum', 'role.hierarchy'])
 
 Route::post('/login', [AuthController::class , 'login']);
 Route::post('/register', [AuthController::class , 'register']);
+
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class , 'logout']);
 

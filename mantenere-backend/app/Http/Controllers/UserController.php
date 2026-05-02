@@ -115,6 +115,7 @@ class UserController extends Controller
             'rfc' => 'nullable|string',
             'razon_social' => 'nullable|string',
             'direccion_fiscal' => 'nullable|string',
+            'avatar' => 'nullable|string',
         ]);
 
         // 🔥 Si intenta cambiar el rol
@@ -176,6 +177,10 @@ class UserController extends Controller
 
         if ($request->has('direccion_fiscal')) {
             $user->direccion_fiscal = $request->direccion_fiscal;
+        }
+
+        if ($request->has('avatar')) {
+            $user->avatar = $request->avatar;
         }
 
         $user->save();
