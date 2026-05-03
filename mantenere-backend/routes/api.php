@@ -66,6 +66,11 @@ Route::post('/negocios', [NegocioController::class , 'store']); // Crear nuevo
 Route::get('/negocios/{id}', [NegocioController::class , 'show']); // Ver uno
 Route::put('/negocios/{id}', [NegocioController::class , 'update']); // Editar
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/negocios/{id}/encargado', [NegocioController::class, 'asignarEncargado']);
+    Route::get('/negocios/{id}/encargado', [NegocioController::class, 'getEncargado']);
+});
+
 // 📋 RUTAS DE REPORTES
 Route::get('/reportes/trabajo/{trabajo_id}', [App\Http\Controllers\Api\ReporteController::class , 'showByTrabajo']);
 Route::post('/reportes', [App\Http\Controllers\Api\ReporteController::class , 'store']);
