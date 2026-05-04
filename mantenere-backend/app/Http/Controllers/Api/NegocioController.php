@@ -62,8 +62,8 @@ class NegocioController extends Controller
             return response()->json(['message' => 'Negocio no encontrado'], 404);
         }
 
-        // Actualizamos los datos básicos de la empresa
-        $negocio->update($request->except('levantamiento'));
+        // Actualizamos los datos básicos de la empresa (ignorando user_id para no robar propiedad)
+        $negocio->update($request->except(['levantamiento', 'user_id']));
 
         // Sincronizamos el levantamiento si viene en la petición
         if ($request->has('levantamiento')) {
