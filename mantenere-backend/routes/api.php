@@ -58,6 +58,7 @@ Route::get('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class 
 Route::put('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'update']);
 Route::put('/trabajos/{id}/asignar', [App\Http\Controllers\Api\TrabajoController::class , 'asignarTrabajador']);
 Route::put('/trabajos/{id}/estado', [App\Http\Controllers\Api\TrabajoController::class , 'cambiarEstado']);
+Route::delete('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'destroy']);
 
 
 // 🏢 RUTAS DE NEGOCIOS

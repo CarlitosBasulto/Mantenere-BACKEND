@@ -121,4 +121,18 @@ class TrabajoController extends Controller
 
         return response()->json($trabajo);
     }
+
+    // 🗑️ ELIMINAR UN TRABAJO (SOLICITUD)
+    public function destroy($id)
+    {
+        $trabajo = Trabajo::find($id);
+
+        if (!$trabajo) {
+            return response()->json(['message' => 'Trabajo no encontrado'], 404);
+        }
+
+        $trabajo->delete();
+
+        return response()->json(['message' => 'Solicitud eliminada exitosamente.'], 200);
+    }
 }
