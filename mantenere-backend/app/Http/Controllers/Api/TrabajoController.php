@@ -36,6 +36,7 @@ class TrabajoController extends Controller
             'titulo' => 'required|string',
             'descripcion' => 'nullable|string',
             'prioridad' => 'required|in:Alta,Media,Baja',
+            'tipo' => 'nullable|string',
             'negocio_id' => 'required|exists:negocios,id',
             'fecha_programada' => 'nullable|date',
         ]);
@@ -44,6 +45,7 @@ class TrabajoController extends Controller
             'titulo' => $request->titulo,
             'descripcion' => $request->descripcion,
             'prioridad' => $request->prioridad,
+            'tipo' => $request->tipo,
             'estado' => 'Pendiente', // Por defecto inicia pendiente
             'negocio_id' => $request->negocio_id,
             'fecha_programada' => $request->fecha_programada,
