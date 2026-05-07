@@ -112,6 +112,7 @@ class NegocioController extends Controller
                         'anioFabricacion' => $eqInput['anioFabricacion'] ?? null,
                         'anioUso' => $eqInput['anioUso'] ?? null,
                         'foto' => $eqInput['foto'] ?? null,
+                        'fotoPlaca' => $eqInput['fotoPlaca'] ?? null,
                     ]);
                     $area->equipos()->save($equipo);
                 }

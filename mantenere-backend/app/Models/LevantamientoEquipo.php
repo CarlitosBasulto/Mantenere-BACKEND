@@ -11,6 +11,6 @@ class LevantamientoEquipo extends Model
     
     protected $fillable = [
         'levantamiento_area_id', 'nombre', 'marca', 'modelo', 
-        'serie', 'anioFabricacion', 'anioUso', 'foto'
+        'serie', 'anioFabricacion', 'anioUso', 'foto', 'fotoPlaca'
     ];
 }
