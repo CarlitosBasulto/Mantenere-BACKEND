@@ -18,7 +18,8 @@ class Trabajo extends Model
         'visitado',
         'trabajador_id',
         'negocio_id',
-        'fecha_programada'
+        'fecha_programada',
+        'foto_url'
     ];
 
     public function trabajador()

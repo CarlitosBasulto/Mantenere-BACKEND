@@ -39,7 +39,16 @@ class TrabajoController extends Controller
             'tipo' => 'nullable|string',
             'negocio_id' => 'required|exists:negocios,id',
             'fecha_programada' => 'nullable|date',
+            'foto' => 'nullable|image|max:5120', // Hasta 5MB
         ]);
+
+        $fotoUrl = null;
+        if ($request->hasFile('foto')) {
+            // Guardar imagen en storage/app/public/trabajos/fotos
+            $path = $request->file('foto')->store('trabajos/fotos', 'public');
+            // Generar URL completa o dejar el path para el frontend
+            $fotoUrl = asset('storage/' . $path);
+        }
 
         $trabajo = Trabajo::create([
             'titulo' => $request->titulo,
@@ -49,6 +58,7 @@ class TrabajoController extends Controller
             'estado' => 'Pendiente', // Por defecto inicia pendiente
             'negocio_id' => $request->negocio_id,
             'fecha_programada' => $request->fecha_programada,
+            'foto_url' => $fotoUrl,
             // trabajador_id va vacío al principio hasta que un admin lo asigne
         ]);
 
