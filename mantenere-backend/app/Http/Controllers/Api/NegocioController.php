@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Negocio;
+use App\Models\LevantamientoEquipo;
+use App\Models\MantenimientoSolicitud;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -15,8 +17,63 @@ class NegocioController extends Controller
     // 🔍 Obtener todos los negocios (Para ListaNegocios del Admin)
     public function index()
     {
-        $negocios = Negocio::all();
+        $negocios = Negocio::with('areas.equipos.categoria')->get();
         return response()->json($negocios);
+    }
+
+    // ✏️ Actualizar datos de un equipo individual (Admin desde Inventario General)
+    public function updateEquipo(Request $request, $id)
+    {
+        $equipo = LevantamientoEquipo::find($id);
+
+        if (!$equipo) {
+            return response()->json(['message' => 'Equipo no encontrado'], 404);
+        }
+
+        $equipo->fill([
+            'nombre'          => $request->input('nombre', $equipo->nombre),
+            'marca'           => $request->input('marca', $equipo->marca),
+            'modelo'          => $request->input('modelo', $equipo->modelo),
+            'serie'           => $request->input('serie', $equipo->serie),
+            'anioFabricacion' => $request->input('anioFabricacion', $equipo->anioFabricacion),
+            'anioUso'         => $request->input('anioUso', $equipo->anioUso),
+            'categoria_id'    => $request->input('categoria_id', $equipo->categoria_id),
+        ]);
+        $equipo->save();
+
+        $equipo->load('categoria');
+
+        return response()->json([
+            'message' => 'Equipo actualizado correctamente',
+            'data'    => $equipo,
+        ]);
+    }
+
+    // 📋 Historial de solicitudes de mantenimiento para un equipo específico
+    public function getEquipoHistorial($id)
+    {
+        $equipo = LevantamientoEquipo::with(['categoria', 'area.negocio'])->find($id);
+
+        if (!$equipo) {
+            return response()->json(['message' => 'Equipo no encontrado'], 404);
+        }
+
+        $solicitudes = MantenimientoSolicitud::with([
+            'visitas.tecnico',
+            'reportes',
+            'visitaTrabajo.reporte',
+            'reparacionTrabajo.reporte',
+        ])
+        ->where(function ($q) use ($id) {
+            $q->where('equipo_id', $id)->orWhere('levantamiento_equipo_id', $id);
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        return response()->json([
+            'equipo'      => $equipo,
+            'solicitudes' => $solicitudes,
+        ]);
     }
 
     // 🔍 Obtener un solo negocio (Para Editar PerfilEmpresa)
@@ -113,14 +170,15 @@ class NegocioController extends Controller
                         'anioUso' => $eqInput['anioUso'] ?? null,
                         'foto' => $eqInput['foto'] ?? null,
                         'fotoPlaca' => $eqInput['fotoPlaca'] ?? null,
+                        'categoria_id' => $eqInput['categoria_id'] ?? null,
                     ]);
                     $area->equipos()->save($equipo);
                 }
             }
         }
 
-        // Refrescamos el modelo para devolverlo completo
-        $negocio->load('areas.equipos');
+        // Refrescamos el modelo para devolverlo completo con su categoría
+        $negocio->load('areas.equipos.categoria');
 
         return response()->json([
             'message' => 'Negocio actualizado correctamente',

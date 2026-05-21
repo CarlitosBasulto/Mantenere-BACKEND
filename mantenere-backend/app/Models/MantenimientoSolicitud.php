@@ -14,6 +14,7 @@ class MantenimientoSolicitud extends Model
     protected $fillable = [
         'cliente_id',
         'negocio_id',
+        'equipo_id',
         'levantamiento_equipo_id',
         'descripcion_problema',
         'estado',
@@ -31,6 +32,11 @@ class MantenimientoSolicitud extends Model
     public function negocio()
     {
         return $this->belongsTo(Negocio::class);
+    }
+
+    public function equipo()
+    {
+        return $this->belongsTo(LevantamientoEquipo::class, 'equipo_id');
     }
 
     public function levantamientoEquipo()

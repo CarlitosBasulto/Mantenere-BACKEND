@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\TrabajoController;
 use App\Http\Controllers\ActividadController; // <-- FIJATE QUE YA NO DICE \Api\
 use App\Http\Controllers\Api\MantenimientoSolicitudController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\CategoriaEquipoController;
 
 /*Route::post('/ping', function () {
  return response()->json(['pong' => true]); });*/
@@ -106,3 +107,15 @@ Route::delete('/actividades/{id}', [ActividadController::class , 'destroy']);
     Route::post('/mantenimiento-solicitudes/{id}/asignar-reparacion', [MantenimientoSolicitudController::class, 'asignarReparacion']);
 // 🖼️ RUTA PARA SUBIDA DE IMÁGENES GENÉRICA
 Route::post('/upload-imagen', [ImageController::class, 'upload']);
+
+// 🏷️ RUTAS DE CATEGORÍAS DE EQUIPOS
+Route::get('/categorias-equipos', [CategoriaEquipoController::class, 'index']);
+Route::post('/categorias-equipos', [CategoriaEquipoController::class, 'store']);
+Route::delete('/categorias-equipos/{id}', [CategoriaEquipoController::class, 'destroy']);
+Route::get('/equipos-consumo', [CategoriaEquipoController::class, 'consumoReporte']);
+Route::post('/equipos-consumo', [CategoriaEquipoController::class, 'addConsumoManual']);
+Route::put('/equipos-consumo/{id}/categoria', [CategoriaEquipoController::class, 'updateConsumoCategoria']);
+
+// 🔧 RUTAS DE EQUIPOS INDIVIDUALES (Admin)
+Route::put('/equipos/{id}', [NegocioController::class, 'updateEquipo']);
+Route::get('/equipos/{id}/historial', [NegocioController::class, 'getEquipoHistorial']);

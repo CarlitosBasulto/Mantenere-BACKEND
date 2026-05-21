@@ -12,4 +12,9 @@ class LevantamientoArea extends Model
     {
         return $this->hasMany(LevantamientoEquipo::class);
     }
+
+    public function negocio()
+    {
+        return $this->belongsTo(Negocio::class, 'negocio_id');
+    }
 }

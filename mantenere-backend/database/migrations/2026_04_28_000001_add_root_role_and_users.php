@@ -33,12 +33,25 @@ return new class extends Migration
         // Reactivar FK checks antes de tocar usuarios
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // 2. Actualizar el usuario root para que use role_id=0
+        // 2. Asegurarse de que el rol Admin (id=1) existe antes de usarlo
+        //    (en un fresh migrate los seeders no han corrido todavía)
+        $adminRoleExists = DB::table('roles')->where('id', 1)->exists();
+        if (!$adminRoleExists) {
+            DB::table('roles')->insert([
+                'id'              => 1,
+                'name'            => 'Admin',
+                'hierarchy_level' => 1,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+        }
+
+        // 3. Actualizar el usuario root para que use role_id=0
         DB::table('users')
             ->where('email', 'root@mantenere.com')
             ->update(['role_id' => 0]);
 
-        // 3. Crear el segundo admin si no existe (no se toca si ya existe)
+        // 4. Crear el segundo admin si no existe (no se toca si ya existe)
         $adminExists = DB::table('users')->where('email', 'admin2@mantenere.com')->exists();
         if (!$adminExists) {
             DB::table('users')->insert([

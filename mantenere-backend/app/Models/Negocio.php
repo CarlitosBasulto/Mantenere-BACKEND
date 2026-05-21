@@ -10,7 +10,7 @@ class Negocio extends Model
     use HasFactory;
 
     // Agrega esta propiedad al inicio de la clase para cargar automáticamente las áreas y equipos
-    protected $with = ['areas.equipos'];
+    protected $with = ['areas.equipos.categoria'];
 
     protected $fillable = [
         'nombre', 'tipo', 'encargado', 'nombrePlaza',

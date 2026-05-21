@@ -9,19 +9,19 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        Role::create([
-            'name' => 'Admin',
-            'hierarchy_level' => 1
-        ]);
+        Role::firstOrCreate(
+            ['name' => 'Admin'],
+            ['hierarchy_level' => 1]
+        );
 
-        Role::create([
-            'name' => 'Cliente',
-            'hierarchy_level' => 2
-        ]);
+        Role::firstOrCreate(
+            ['name' => 'Cliente'],
+            ['hierarchy_level' => 3]
+        );
 
-        Role::create([
-            'name' => 'Trabajador',
-            'hierarchy_level' => 3
-        ]);
+        Role::firstOrCreate(
+            ['name' => 'Trabajador'],
+            ['hierarchy_level' => 4]
+        );
     }
 }
