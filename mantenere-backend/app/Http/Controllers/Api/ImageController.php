@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ImageController extends Controller
 {
@@ -24,7 +23,8 @@ class ImageController extends Controller
             
             try {
                 // Subir directamente a Cloudinary
-                $uploadedFileUrl = Cloudinary::upload($file->getRealPath())->getSecurePath();
+                $result = cloudinary()->uploadApi()->upload($file->getRealPath());
+                $uploadedFileUrl = $result['secure_url'];
 
                 return response()->json([
                     'message' => 'Imagen subida correctamente',
