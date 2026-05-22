@@ -22,7 +22,7 @@ class TrabajadorController extends Controller
     // 🔍 VER UNO
     public function show($id)
     {
-        $trabajador = Trabajador::with('user')->find($id);
+        $trabajador = Trabajador::with('user')->withCount('trabajos')->find($id);
 
         if (!$trabajador) {
             return response()->json(['message' => 'No encontrado'], 404);
