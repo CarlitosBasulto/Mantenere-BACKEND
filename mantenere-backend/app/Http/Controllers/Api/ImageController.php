@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ImageController extends Controller
 {
@@ -21,20 +22,21 @@ class ImageController extends Controller
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
             
-            // Generar nombre único para la imagen
-            $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
-            
-            // Guardar en storage/app/public/uploads
-            $path = $file->storeAs('uploads', $filename, 'public');
-            
-            // Generar URL completa
-            $url = asset('storage/' . $path);
+            try {
+                // Subir directamente a Cloudinary
+                $uploadedFileUrl = Cloudinary::upload($file->getRealPath())->getSecurePath();
 
-            return response()->json([
-                'message' => 'Imagen subida correctamente',
-                'url' => $url,
-                'path' => $path
-            ], 200);
+                return response()->json([
+                    'message' => 'Imagen subida correctamente',
+                    'url' => $uploadedFileUrl,
+                    'path' => $uploadedFileUrl // Se mantiene path igual que url por compatibilidad
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Error al subir la imagen a la nube',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
         }
 
         return response()->json(['message' => 'No se recibió ninguna imagen'], 400);
