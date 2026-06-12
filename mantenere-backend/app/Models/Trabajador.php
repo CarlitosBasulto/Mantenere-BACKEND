@@ -16,7 +16,8 @@ class Trabajador extends Model
         'telefono',
         'puesto',
         'estado',
-        'user_id'
+        'user_id',
+        'admin_autonomo_id'
     ];
 
 

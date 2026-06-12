@@ -80,8 +80,14 @@ class NotificacionController extends Controller
             'enlace' => 'nullable|string',
         ]);
 
-        $users = \App\Models\User::whereHas('role', function($query) use ($request) {
-            $query->where('name', $request->role);
+        $rolesToNotify = [$request->role];
+        if ($request->role === 'admin') {
+            $rolesToNotify[] = 'admin-autonomo';
+            $rolesToNotify[] = 'admin_autonomo';
+        }
+
+        $users = \App\Models\User::whereHas('role', function($query) use ($rolesToNotify) {
+            $query->whereIn('name', $rolesToNotify);
         })->get();
 
         $notifications = [];

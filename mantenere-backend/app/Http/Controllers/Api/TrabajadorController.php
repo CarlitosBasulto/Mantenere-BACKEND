@@ -12,17 +12,32 @@ use Illuminate\Support\Facades\Hash;
 class TrabajadorController extends Controller
 {
     // 🔍 LISTAR trabajadores
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(
-            Trabajador::with('user')->get()
-        );
+        $user = $request->user();
+        $roleName = $user && $user->role ? strtolower($user->role->name) : '';
+
+        $query = Trabajador::with('user');
+
+        if ($roleName === 'admin-autonomo') {
+            $query->where('admin_autonomo_id', $user->id);
+        } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
+            // Admin principal ve solo técnicos del sistema principal (sin admin_autonomo_id)
+            // O puede quitar este filtro para ver todos
+            $query->whereNull('admin_autonomo_id');
+        }
+
+        return response()->json($query->get());
     }
 
     // 🔍 VER UNO
     public function show($id)
     {
-        $trabajador = Trabajador::with('user')->withCount('trabajos')->find($id);
+        $trabajador = Trabajador::with('user')
+            ->withCount(['trabajos' => function ($query) {
+                $query->where('estado', 'Finalizado');
+            }])
+            ->find($id);
 
         if (!$trabajador) {
             return response()->json(['message' => 'No encontrado'], 404);
@@ -35,10 +50,10 @@ class TrabajadorController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string',
-            'correo' => 'required|email|unique:users,email',
+            'nombre'   => 'required|string',
+            'correo'   => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'puesto' => 'required|string',
+            'puesto'   => 'required|string',
             'telefono' => 'nullable|string',
         ]);
 
@@ -47,21 +62,29 @@ class TrabajadorController extends Controller
 
         // 1️⃣ Crear usuario
         $user = User::create([
-            'name' => $request->nombre,
-            'email' => $request->correo,
+            'name'     => $request->nombre,
+            'email'    => $request->correo,
             'password' => Hash::make($request->password),
-            'role_id' => $roleTrabajador->id,
-            'active' => 1
+            'role_id'  => $roleTrabajador->id,
+            'active'   => 1
         ]);
+
+        // Determinar admin_autonomo_id
+        $authUser = $request->user();
+        $adminAutonomoId = null;
+        if ($authUser && $authUser->role && strtolower($authUser->role->name) === 'admin-autonomo') {
+            $adminAutonomoId = $authUser->id;
+        }
 
         // 2️⃣ Crear trabajador
         $trabajador = Trabajador::create([
-            'nombre' => $request->nombre,
-            'correo' => $request->correo,
-            'telefono' => $request->telefono,
-            'puesto' => $request->puesto,
-            'estado' => 'Activo',
-            'user_id' => $user->id
+            'nombre'           => $request->nombre,
+            'correo'           => $request->correo,
+            'telefono'         => $request->telefono,
+            'puesto'           => $request->puesto,
+            'estado'           => 'Activo',
+            'user_id'          => $user->id,
+            'admin_autonomo_id' => $adminAutonomoId,
         ]);
 
         return response()->json($trabajador, 201);

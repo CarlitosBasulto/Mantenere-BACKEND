@@ -45,30 +45,32 @@ Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class , 'logout']);
 
 
-// Rutas para Trabajadores
-Route::get('/trabajadores', [TrabajadorController::class , 'index']);
-Route::get('/trabajadores/{id}', [TrabajadorController::class , 'show']);
-Route::post('/trabajadores', [TrabajadorController::class , 'store']);
-Route::put('/trabajadores/{id}', [TrabajadorController::class , 'update']);
-Route::patch('/trabajadores/{id}/estado', [TrabajadorController::class , 'toggleEstado']);
-
-// 🛠️ RUTAS DE TRABAJOS
-Route::get('/trabajos', [App\Http\Controllers\Api\TrabajoController::class , 'index']);
-Route::post('/trabajos', [App\Http\Controllers\Api\TrabajoController::class , 'store']);
-Route::get('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'show']);
-Route::put('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'update']);
-Route::put('/trabajos/{id}/asignar', [App\Http\Controllers\Api\TrabajoController::class , 'asignarTrabajador']);
-Route::put('/trabajos/{id}/estado', [App\Http\Controllers\Api\TrabajoController::class , 'cambiarEstado']);
-Route::delete('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'destroy']);
-
-
-// 🏢 RUTAS DE NEGOCIOS
-Route::get('/negocios', [NegocioController::class , 'index']); // Listar todos
-Route::post('/negocios', [NegocioController::class , 'store']); // Crear nuevo
-Route::get('/negocios/{id}', [NegocioController::class , 'show']); // Ver uno
-Route::put('/negocios/{id}', [NegocioController::class , 'update']); // Editar
-
+// Rutas para Trabajadores (requieren auth para filtrar por admin_autonomo_id)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/trabajadores', [TrabajadorController::class , 'index']);
+    Route::get('/trabajadores/{id}', [TrabajadorController::class , 'show']);
+    Route::post('/trabajadores', [TrabajadorController::class , 'store']);
+    Route::put('/trabajadores/{id}', [TrabajadorController::class , 'update']);
+    Route::patch('/trabajadores/{id}/estado', [TrabajadorController::class , 'toggleEstado']);
+});
+
+// 🛠️ RUTAS DE TRABAJOS (requieren auth para filtrar por admin_autonomo_id)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/trabajos', [App\Http\Controllers\Api\TrabajoController::class , 'index']);
+    Route::post('/trabajos', [App\Http\Controllers\Api\TrabajoController::class , 'store']);
+    Route::get('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'show']);
+    Route::put('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'update']);
+    Route::put('/trabajos/{id}/asignar', [App\Http\Controllers\Api\TrabajoController::class , 'asignarTrabajador']);
+    Route::put('/trabajos/{id}/estado', [App\Http\Controllers\Api\TrabajoController::class , 'cambiarEstado']);
+    Route::delete('/trabajos/{id}', [App\Http\Controllers\Api\TrabajoController::class , 'destroy']);
+});
+
+// 🏢 RUTAS DE NEGOCIOS (requieren auth para filtrar por admin_autonomo_id)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/negocios', [NegocioController::class , 'index']);
+    Route::post('/negocios', [NegocioController::class , 'store']);
+    Route::get('/negocios/{id}', [NegocioController::class , 'show']);
+    Route::put('/negocios/{id}', [NegocioController::class , 'update']);
     Route::post('/negocios/{id}/encargado', [NegocioController::class, 'asignarEncargado']);
     Route::get('/negocios/{id}/encargado', [NegocioController::class, 'getEncargado']);
 });
@@ -119,3 +121,24 @@ Route::put('/equipos-consumo/{id}/categoria', [CategoriaEquipoController::class,
 // 🔧 RUTAS DE EQUIPOS INDIVIDUALES (Admin)
 Route::put('/equipos/{id}', [NegocioController::class, 'updateEquipo']);
 Route::get('/equipos/{id}/historial', [NegocioController::class, 'getEquipoHistorial']);
+
+// 🤝 RUTAS DE ADMIN AUTÓNOMO (supervisión por Admin principal)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/admin-autonomo', [App\Http\Controllers\Api\AdminAutonomoController::class, 'index']);
+    Route::get('/admin-autonomo/{id}/dashboard', [App\Http\Controllers\Api\AdminAutonomoController::class, 'dashboard']);
+    Route::get('/admin-autonomo/{id}/negocios', [App\Http\Controllers\Api\AdminAutonomoController::class, 'negocios']);
+    Route::get('/admin-autonomo/{id}/trabajadores', [App\Http\Controllers\Api\AdminAutonomoController::class, 'trabajadores']);
+    Route::get('/admin-autonomo/{id}/trabajos', [App\Http\Controllers\Api\AdminAutonomoController::class, 'trabajos']);
+    Route::get('/admin-autonomo/{id}/cotizaciones', [App\Http\Controllers\Api\AdminAutonomoController::class, 'cotizaciones']);
+    Route::put('/admin-autonomo/{id}/bloquear', [App\Http\Controllers\Api\AdminAutonomoController::class, 'toggleBloqueo']);
+
+    // 🔔 RUTAS DE NOTIFICACIONES
+    Route::get('/notifications', [App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::put('/notifications/read-all', [App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+    Route::put('/notifications/{id}/read', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+
+    // 💬 RUTAS DE CHAT DE TRABAJOS
+    Route::get('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'index']);
+    Route::post('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'store']);
+});
+    Route::delete('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'destroy']);

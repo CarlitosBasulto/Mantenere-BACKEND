@@ -22,20 +22,37 @@ class ImageController extends Controller
             $file = $request->file('foto');
             
             try {
-                // Subir directamente a Cloudinary
-                $result = cloudinary()->uploadApi()->upload($file->getRealPath());
-                $uploadedFileUrl = $result['secure_url'];
+                if (env('CLOUDINARY_URL')) {
+                    // Subir directamente a Cloudinary
+                    $result = cloudinary()->uploadApi()->upload($file->getRealPath());
+                    $uploadedFileUrl = $result['secure_url'];
+                } else {
+                    // Fallback local si no hay Cloudinary
+                    $path = $file->store('uploads', 'public');
+                    $uploadedFileUrl = url('storage/' . $path);
+                }
 
                 return response()->json([
                     'message' => 'Imagen subida correctamente',
                     'url' => $uploadedFileUrl,
-                    'path' => $uploadedFileUrl // Se mantiene path igual que url por compatibilidad
+                    'path' => $uploadedFileUrl
                 ], 200);
             } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Error al subir la imagen a la nube',
-                    'error' => $e->getMessage()
-                ], 500);
+                // Si Cloudinary falla por alguna razón, usar local
+                try {
+                    $path = $file->store('uploads', 'public');
+                    $uploadedFileUrl = url('storage/' . $path);
+                    return response()->json([
+                        'message' => 'Imagen subida localmente (Cloudinary falló)',
+                        'url' => $uploadedFileUrl,
+                        'path' => $uploadedFileUrl
+                    ], 200);
+                } catch (\Exception $e2) {
+                    return response()->json([
+                        'message' => 'Error al subir la imagen',
+                        'error' => $e->getMessage() . ' | ' . $e2->getMessage()
+                    ], 500);
+                }
             }
         }
 

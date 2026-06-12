@@ -17,7 +17,7 @@ class UserController extends Controller
         $authUser = $request->user();
         $myLevel  = $authUser->role->hierarchy_level;
 
-        $users = User::with(['role', 'trabajador'])
+        $usersQuery = User::with(['role', 'trabajador'])
             ->where('id', '!=', $authUser->id)
             ->whereHas('role', function ($query) use ($myLevel) {
                 // Root y Admin (level <= 1): ven su mismo nivel y todos los inferiores (>=)
@@ -27,8 +27,27 @@ class UserController extends Controller
                 } else {
                     $query->where('hierarchy_level', '>', $myLevel);
                 }
-            })
-            ->get()
+            });
+
+        // Filtrar usuarios si es admin-autonomo
+        if ($authUser->role && $authUser->role->name === 'admin-autonomo') {
+            $usersQuery->where(function ($q) use ($authUser) {
+                // Usuarios que son dueños de sus negocios
+                $q->whereHas('negocios', function ($q2) use ($authUser) {
+                    $q2->where('admin_autonomo_id', $authUser->id);
+                })
+                // Usuarios que son encargados de sus negocios
+                ->orWhereHas('negocioEncargado', function ($q4) use ($authUser) {
+                    $q4->where('admin_autonomo_id', $authUser->id);
+                })
+                // Usuarios que son sus trabajadores
+                ->orWhereHas('trabajador', function ($q3) use ($authUser) {
+                    $q3->where('admin_autonomo_id', $authUser->id);
+                });
+            });
+        }
+
+        $users = $usersQuery->get()
             ->map(function ($user) {
                 // Si el usuario no tiene avatar directo, lo toma del trabajador si existe
                 if (!$user->avatar && $user->trabajador) {

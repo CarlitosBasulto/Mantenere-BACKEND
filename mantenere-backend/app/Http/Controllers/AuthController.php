@@ -27,12 +27,17 @@ class AuthController extends Controller
 
         $token = $user->createToken('api-token')->plainTextToken;
 
-        // Normalizar el nombre del rol para el frontend:
-        // Sub-Admin se trata como "admin" para que vea el mismo menú.
-        // La diferencia de permisos se controla en el backend por hierarchy_level.
+        // Normalizar el nombre del rol para el frontend
         $roleName = strtolower($user->role->name);
+
+        // Sub-Admin → mismo panel que admin, diferencia controlada por hierarchy_level
         if ($roleName === 'sub-admin') {
             $roleName = 'admin';
+        }
+
+        // Admin Autónomo → panel propio /autonomo
+        if ($roleName === 'admin-autonomo') {
+            $roleName = 'autonomo';
         }
 
         return response()->json([

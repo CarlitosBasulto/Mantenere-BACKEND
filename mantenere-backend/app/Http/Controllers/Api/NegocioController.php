@@ -15,9 +15,25 @@ use App\Mail\CredencialesSucursalMail;
 class NegocioController extends Controller
 {
     // 🔍 Obtener todos los negocios (Para ListaNegocios del Admin)
-    public function index()
+    public function index(Request $request)
     {
-        $negocios = Negocio::with('areas.equipos.categoria')->get();
+        $user = $request->user();
+        $roleName = $user && $user->role ? strtolower($user->role->name) : '';
+
+        $query = Negocio::with('areas.equipos.categoria');
+
+        // Admin Autónomo solo ve SUS negocios
+        if ($roleName === 'admin-autonomo') {
+            $query->where('admin_autonomo_id', $user->id);
+        } elseif ($roleName === 'encargado') {
+            $query->where('id', $user->negocio_id);
+        } elseif ($roleName !== 'admin' && $roleName !== 'root' && $roleName !== 'sub-admin') {
+            // Clientes, técnicos etc. solo ven negocios del sistema principal
+            $query->whereNull('admin_autonomo_id');
+        }
+        // Admin / Root / Sub-Admin ven TODOS los negocios
+
+        $negocios = $query->get();
         return response()->json($negocios);
     }
 
@@ -94,19 +110,26 @@ class NegocioController extends Controller
         // Validación de datos básicos
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'tipo' => 'required|in:FC,FS,MALL,W/M',
-            'gerente' => 'nullable|string',
-            'telefonoGerente' => 'nullable|string',
-            'subgerente' => 'nullable|string',
-            'telefonoSubgerente' => 'nullable|string',
+            'tipo'   => 'required|string|max:255',
+            'gerente'             => 'nullable|string',
+            'telefonoGerente'     => 'nullable|string',
+            'subgerente'          => 'nullable|string',
+            'telefonoSubgerente'  => 'nullable|string',
         ]);
 
-        // Crear el registro masivo
-        $negocio = Negocio::create($request->all());
+        $data = $request->all();
+
+        // Si quien crea es Admin Autónomo, taggear el negocio con su ID
+        $user = $request->user();
+        if ($user && $user->role && strtolower($user->role->name) === 'admin-autonomo') {
+            $data['admin_autonomo_id'] = $user->id;
+        }
+
+        $negocio = Negocio::create($data);
 
         return response()->json([
             'message' => 'Negocio creado exitosamente',
-            'data' => $negocio
+            'data'    => $negocio
         ], 201);
     }
 
@@ -227,10 +250,10 @@ class NegocioController extends Controller
                 'active' => 1
             ]);
         }
-        // Enviar correo
-        \Illuminate\Support\Facades\Mail::to($encargado->email)->send(
-            new \App\Mail\CredencialesSucursalMail($encargado, $plainPassword, $negocio->nombre)
-        );
+        // Enviar correo (Deshabilitado temporalmente)
+        // \Illuminate\Support\Facades\Mail::to($encargado->email)->send(
+        //     new \App\Mail\CredencialesSucursalMail($encargado, $plainPassword, $negocio->nombre)
+        // );
         return response()->json([
             'message' => 'Encargado asignado correctamente',
             'encargado' => $encargado

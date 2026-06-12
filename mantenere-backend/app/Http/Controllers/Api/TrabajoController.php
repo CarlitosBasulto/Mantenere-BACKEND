@@ -9,12 +9,21 @@ use Illuminate\Http\Request;
 class TrabajoController extends Controller
 {
     // 🔍 LISTAR TODOS LOS TRABAJOS (SOLICITUDES)
-    // Traemos también los datos del trabajador y negocio asociados gracias a las relaciones en tu modelo
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(
-            Trabajo::with(['trabajador', 'negocio', 'reporte'])->orderBy('created_at', 'desc')->get()
-        );
+        $user = $request->user();
+        $roleName = $user && $user->role ? strtolower($user->role->name) : '';
+
+        $query = Trabajo::with(['trabajador', 'negocio', 'reporte'])->orderBy('created_at', 'desc');
+
+        if ($roleName === 'admin-autonomo') {
+            $query->where('admin_autonomo_id', $user->id);
+        } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
+            $query->whereNull('admin_autonomo_id');
+        }
+        // Técnicos y clientes: los trabajos ya tienen su negocio_id que los delimita
+
+        return response()->json($query->get());
     }
 
     // 🔍 VER UN TRABAJO ESPECÍFICO
@@ -50,16 +59,29 @@ class TrabajoController extends Controller
             $fotoUrl = asset('storage/' . $path);
         }
 
+        // Detectar si quien crea es Admin Autónomo
+        $authUser = $request->user();
+        $adminAutonomoId = null;
+        if ($authUser && $authUser->role && strtolower($authUser->role->name) === 'admin-autonomo') {
+            $adminAutonomoId = $authUser->id;
+        } else {
+            // Heredar admin_autonomo_id del negocio si aplica (ej. creado por un encargado)
+            $negocio = \App\Models\Negocio::find($request->negocio_id);
+            if ($negocio && $negocio->admin_autonomo_id) {
+                $adminAutonomoId = $negocio->admin_autonomo_id;
+            }
+        }
+
         $trabajo = Trabajo::create([
-            'titulo' => $request->titulo,
-            'descripcion' => $request->descripcion,
-            'prioridad' => $request->prioridad,
-            'tipo' => $request->tipo,
-            'estado' => 'Pendiente', // Por defecto inicia pendiente
-            'negocio_id' => $request->negocio_id,
-            'fecha_programada' => $request->fecha_programada,
-            'foto_url' => $fotoUrl,
-            // trabajador_id va vacío al principio hasta que un admin lo asigne
+            'titulo'             => $request->titulo,
+            'descripcion'        => $request->descripcion,
+            'prioridad'          => $request->prioridad,
+            'tipo'               => $request->tipo,
+            'estado'             => 'Pendiente',
+            'negocio_id'         => $request->negocio_id,
+            'fecha_programada'   => $request->fecha_programada,
+            'foto_url'           => $fotoUrl,
+            'admin_autonomo_id'  => $adminAutonomoId,
         ]);
 
         return response()->json($trabajo, 201);

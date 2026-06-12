@@ -67,4 +67,16 @@ class User extends Authenticatable
     {
         return $this->hasOne(Trabajador::class);
     }
+
+    // Negocios de los cuales el usuario es dueño (cliente)
+    public function negocios()
+    {
+        return $this->hasMany(Negocio::class, 'user_id');
+    }
+
+    // Negocio del cual el usuario es encargado
+    public function negocioEncargado()
+    {
+        return $this->belongsTo(Negocio::class, 'negocio_id');
+    }
 }
