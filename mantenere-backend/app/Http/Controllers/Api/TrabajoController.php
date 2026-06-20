@@ -29,7 +29,7 @@ class TrabajoController extends Controller
     // 🔍 VER UN TRABAJO ESPECÍFICO
     public function show($id)
     {
-        $trabajo = Trabajo::with(['trabajador', 'negocio', 'reporte', 'mantenimientoSolicitudVisita.levantamientoEquipo', 'mantenimientoSolicitudReparacion.levantamientoEquipo'])->find($id);
+        $trabajo = Trabajo::with(['trabajador', 'negocio.user', 'reporte', 'mantenimientoSolicitudVisita.levantamientoEquipo', 'mantenimientoSolicitudReparacion.levantamientoEquipo'])->find($id);
 
         if (!$trabajo) {
             return response()->json(['message' => 'Trabajo no encontrado'], 404);
@@ -49,14 +49,28 @@ class TrabajoController extends Controller
             'negocio_id' => 'required|exists:negocios,id',
             'fecha_programada' => 'nullable|date',
             'foto' => 'nullable|image|max:5120', // Hasta 5MB
+            'fotos' => 'nullable|array',
+            'fotos.*' => 'image|max:5120',
         ]);
 
-        $fotoUrl = null;
+        $fotoUrls = [];
         if ($request->hasFile('foto')) {
-            // Guardar imagen en storage/app/public/trabajos/fotos
             $path = $request->file('foto')->store('trabajos/fotos', 'public');
-            // Generar URL completa o dejar el path para el frontend
-            $fotoUrl = asset('storage/' . $path);
+            $fotoUrls[] = asset('storage/' . $path);
+        }
+
+        if ($request->hasFile('fotos')) {
+            foreach ($request->file('fotos') as $file) {
+                $path = $file->store('trabajos/fotos', 'public');
+                $fotoUrls[] = asset('storage/' . $path);
+            }
+        }
+
+        $fotoUrl = null;
+        if (count($fotoUrls) === 1) {
+            $fotoUrl = $fotoUrls[0];
+        } elseif (count($fotoUrls) > 1) {
+            $fotoUrl = json_encode($fotoUrls);
         }
 
         // Detectar si quien crea es Admin Autónomo

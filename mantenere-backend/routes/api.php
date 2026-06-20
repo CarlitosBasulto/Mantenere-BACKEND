@@ -98,6 +98,7 @@ Route::get('/checklist/trabajo/{trabajo_id}', [App\Http\Controllers\Api\Checklis
 Route::post('/checklist', [App\Http\Controllers\Api\ChecklistEquipoController::class , 'store']);
 
 Route::post('/actividades', [ActividadController::class , 'store']);
+Route::put('/actividades/{id}', [ActividadController::class , 'update']);
 Route::get('/trabajos/{id}/actividades', [ActividadController::class , 'getByTrabajo']);
 Route::delete('/actividades/{id}', [ActividadController::class , 'destroy']);
 
@@ -109,6 +110,17 @@ Route::delete('/actividades/{id}', [ActividadController::class , 'destroy']);
     Route::post('/mantenimiento-solicitudes/{id}/asignar-reparacion', [MantenimientoSolicitudController::class, 'asignarReparacion']);
 // 🖼️ RUTA PARA SUBIDA DE IMÁGENES GENÉRICA
 Route::post('/upload-imagen', [ImageController::class, 'upload']);
+Route::get('/storage/uploads/{filename}', function ($filename) {
+    $path = 'uploads/' . $filename;
+    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+        abort(404);
+    }
+    $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+    return response()->file($filePath, [
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+    ]);
+});
 
 // 🏷️ RUTAS DE CATEGORÍAS DE EQUIPOS
 Route::get('/categorias-equipos', [CategoriaEquipoController::class, 'index']);

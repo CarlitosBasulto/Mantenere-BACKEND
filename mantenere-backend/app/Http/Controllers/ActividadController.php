@@ -71,6 +71,56 @@ class ActividadController extends Controller
         return response()->json($actividades);
     }
 
+    // Actualizar una actividad
+    public function update(Request $request, $id)
+    {
+        $actividad = Actividad::find($id);
+
+        if (!$actividad) {
+            return response()->json(['message' => 'Actividad no encontrada.'], 404);
+        }
+
+        $request->validate([
+            'tipo' => 'required|string',
+            'descripcion' => 'required|string',
+            'equipo' => 'nullable|array',
+            'cotizacion_sugerida' => 'nullable|array',
+            'refacciones' => 'nullable|array'
+        ]);
+
+        $actividad->update($request->only(['tipo', 'descripcion']));
+
+        // Actualizar equipo
+        $actividad->equipo()->delete();
+        if ($request->has('equipo') && !empty($request->equipo)) {
+            $actividad->equipo()->create($request->equipo);
+        }
+
+        // Actualizar cotización
+        $actividad->cotizacion()->delete();
+        if ($request->has('cotizacion_sugerida') && !empty($request->cotizacion_sugerida)) {
+            $actividad->cotizacion()->create($request->cotizacion_sugerida);
+        }
+
+        // Actualizar refacciones
+        $actividad->refacciones()->delete();
+        if ($request->has('refacciones') && !empty($request->refacciones)) {
+            foreach ($request->refacciones as $refaccion) {
+                $actividad->refacciones()->create([
+                    'pieza' => $refaccion['pieza'],
+                    'cantidad' => $refaccion['cantidad'] ?? 1,
+                    'costo_estimado' => $refaccion['costo_estimado'] ?? null,
+                    'levantamiento_equipo_id' => $refaccion['levantamiento_equipo_id'] ?? null
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Registro de actividad actualizado exitosamente.',
+            'actividad' => $actividad->load(['equipo', 'cotizacion', 'trabajador', 'refacciones'])
+        ], 200);
+    }
+
     // Eliminar una actividad
     public function destroy($id)
     {
