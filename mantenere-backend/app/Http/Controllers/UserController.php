@@ -29,21 +29,28 @@ class UserController extends Controller
                 }
             });
 
-        // Filtrar usuarios si es admin-autonomo
-        if ($authUser->role && $authUser->role->name === 'admin-autonomo') {
-            $usersQuery->where(function ($q) use ($authUser) {
+        // Filtrar usuarios si pertenece a un ecosistema autónomo
+        $isAutonomo = $authUser->role && $authUser->role->name === 'admin-autonomo';
+        $isGerente = $authUser->role && $authUser->role->name === 'gerente-general';
+
+        if ($isAutonomo || $isGerente) {
+            $ecosystemId = $isAutonomo ? $authUser->id : $authUser->admin_autonomo_id;
+
+            $usersQuery->where(function ($q) use ($ecosystemId) {
                 // Usuarios que son dueños de sus negocios
-                $q->whereHas('negocios', function ($q2) use ($authUser) {
-                    $q2->where('admin_autonomo_id', $authUser->id);
+                $q->whereHas('negocios', function ($q2) use ($ecosystemId) {
+                    $q2->where('admin_autonomo_id', $ecosystemId);
                 })
                 // Usuarios que son encargados de sus negocios
-                ->orWhereHas('negocioEncargado', function ($q4) use ($authUser) {
-                    $q4->where('admin_autonomo_id', $authUser->id);
+                ->orWhereHas('negocioEncargado', function ($q4) use ($ecosystemId) {
+                    $q4->where('admin_autonomo_id', $ecosystemId);
                 })
                 // Usuarios que son sus trabajadores
-                ->orWhereHas('trabajador', function ($q3) use ($authUser) {
-                    $q3->where('admin_autonomo_id', $authUser->id);
-                });
+                ->orWhereHas('trabajador', function ($q3) use ($ecosystemId) {
+                    $q3->where('admin_autonomo_id', $ecosystemId);
+                })
+                // Usuarios vinculados directamente (como gerente-general u otros encargados)
+                ->orWhere('admin_autonomo_id', $ecosystemId);
             });
         }
 

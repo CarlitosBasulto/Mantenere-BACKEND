@@ -22,9 +22,9 @@ class NegocioController extends Controller
 
         $query = Negocio::with('areas.equipos.categoria');
 
-        // Admin Autónomo solo ve SUS negocios
-        if ($roleName === 'admin-autonomo') {
-            $query->where('admin_autonomo_id', $user->id);
+        // Admin Autónomo o Gerente General solo ve SUS negocios
+        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+            $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
         } elseif ($roleName === 'encargado') {
             $query->where('id', $user->negocio_id);
         } elseif ($roleName !== 'admin' && $roleName !== 'root' && $roleName !== 'sub-admin') {
@@ -119,10 +119,11 @@ class NegocioController extends Controller
 
         $data = $request->all();
 
-        // Si quien crea es Admin Autónomo, taggear el negocio con su ID
+        // Si quien crea es Admin Autónomo o Gerente General, taggear el negocio con su ID
         $user = $request->user();
-        if ($user && $user->role && strtolower($user->role->name) === 'admin-autonomo') {
-            $data['admin_autonomo_id'] = $user->id;
+        $roleName = $user && $user->role ? strtolower($user->role->name) : '';
+        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+            $data['admin_autonomo_id'] = $user->admin_autonomo_id ?? $user->id;
         }
 
         $negocio = Negocio::create($data);

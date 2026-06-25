@@ -16,8 +16,8 @@ class TrabajoController extends Controller
 
         $query = Trabajo::with(['trabajador', 'negocio', 'reporte'])->orderBy('created_at', 'desc');
 
-        if ($roleName === 'admin-autonomo') {
-            $query->where('admin_autonomo_id', $user->id);
+        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+            $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
         } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
             $query->whereNull('admin_autonomo_id');
         }
@@ -76,8 +76,8 @@ class TrabajoController extends Controller
         // Detectar si quien crea es Admin Autónomo
         $authUser = $request->user();
         $adminAutonomoId = null;
-        if ($authUser && $authUser->role && strtolower($authUser->role->name) === 'admin-autonomo') {
-            $adminAutonomoId = $authUser->id;
+        if ($authUser && $authUser->role && (strtolower($authUser->role->name) === 'admin-autonomo' || strtolower($authUser->role->name) === 'gerente-general')) {
+            $adminAutonomoId = $authUser->admin_autonomo_id ?? $authUser->id;
         } else {
             // Heredar admin_autonomo_id del negocio si aplica (ej. creado por un encargado)
             $negocio = \App\Models\Negocio::find($request->negocio_id);

@@ -17,7 +17,10 @@ class Trabajador extends Model
         'puesto',
         'estado',
         'user_id',
-        'admin_autonomo_id'
+        'admin_autonomo_id',
+        'fecha_nacimiento',
+        'direccion',
+        'rfc'
     ];
 
 

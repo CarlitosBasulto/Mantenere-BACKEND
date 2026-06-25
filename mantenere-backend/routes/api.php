@@ -144,6 +144,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin-autonomo/{id}/cotizaciones', [App\Http\Controllers\Api\AdminAutonomoController::class, 'cotizaciones']);
     Route::put('/admin-autonomo/{id}/bloquear', [App\Http\Controllers\Api\AdminAutonomoController::class, 'toggleBloqueo']);
 
+    // 👨‍💼 RUTAS DEL GERENTE GENERAL DEL ADMIN AUTÓNOMO
+    Route::get('/admin-autonomo/gerente', [App\Http\Controllers\Api\AdminAutonomoController::class, 'getGerenteGeneral']);
+    Route::post('/admin-autonomo/gerente', [App\Http\Controllers\Api\AdminAutonomoController::class, 'asignarGerenteGeneral']);
+
     // 🔔 RUTAS DE NOTIFICACIONES
     Route::get('/notifications', [App\Http\Controllers\Api\NotificationController::class, 'index']);
     Route::put('/notifications/read-all', [App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);

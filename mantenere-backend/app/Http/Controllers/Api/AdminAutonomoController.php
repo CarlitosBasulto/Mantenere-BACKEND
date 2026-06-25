@@ -140,4 +140,90 @@ class AdminAutonomoController extends Controller
             'active'  => $autonomo->active,
         ]);
     }
+
+    /**
+     * Obtener el Gerente General del Admin Autónomo actual
+     */
+    public function getGerenteGeneral(Request $request)
+    {
+        $user = $request->user();
+        $adminId = $user->admin_autonomo_id ?? $user->id;
+
+        $roleGerente = \App\Models\Role::where('name', 'gerente-general')->first();
+        if (!$roleGerente) {
+            return response()->json(['gerente' => null]);
+        }
+
+        $gerente = User::where('admin_autonomo_id', $adminId)
+                       ->where('role_id', $roleGerente->id)
+                       ->first();
+
+        return response()->json([
+            'gerente' => $gerente ? [
+                'name' => $gerente->name,
+                'email' => $gerente->email,
+            ] : null
+        ]);
+    }
+
+    /**
+     * Asignar o actualizar el Gerente General del Admin Autónomo actual
+     */
+    public function asignarGerenteGeneral(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'name' => 'required|string',
+            'password' => 'required|min:8',
+        ]);
+
+        $user = $request->user();
+        // Solo el admin autonomo principal puede crear su gerente general, pero si un gerente general intenta esto,
+        // podríamos bloquearlo. El usuario especificó: "por el momento solo un gerente general por admin autonomo".
+        // Vamos a permitir solo a admin-autonomo asignar a su gerente.
+        if (strtolower($user->role->name) !== 'admin-autonomo') {
+            return response()->json(['message' => 'Solo el Admin Autónomo puede asignar un gerente.'], 403);
+        }
+
+        $roleGerente = \App\Models\Role::where('name', 'gerente-general')->first();
+        if (!$roleGerente) {
+            return response()->json(['message' => 'Rol de gerente general no existe en el sistema'], 500);
+        }
+
+        $gerente = User::where('admin_autonomo_id', $user->id)
+                       ->where('role_id', $roleGerente->id)
+                       ->first();
+
+        $plainPassword = $request->password;
+
+        if ($gerente) {
+            // Actualizar datos
+            $gerente->update([
+                'email' => $request->email,
+                'name' => $request->name,
+                'password' => \Illuminate\Support\Facades\Hash::make($plainPassword),
+            ]);
+        } else {
+            // Validar que el correo no esté en uso
+            $existingUser = User::where('email', $request->email)->first();
+            if ($existingUser) {
+                return response()->json(['message' => 'El correo ya está en uso por otro usuario'], 422);
+            }
+
+            // Crear nuevo gerente
+            $gerente = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => \Illuminate\Support\Facades\Hash::make($plainPassword),
+                'role_id' => $roleGerente->id,
+                'admin_autonomo_id' => $user->id,
+                'active' => 1
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Gerente General asignado correctamente',
+            'gerente' => $gerente
+        ]);
+    }
 }

@@ -19,8 +19,8 @@ class TrabajadorController extends Controller
 
         $query = Trabajador::with('user');
 
-        if ($roleName === 'admin-autonomo') {
-            $query->where('admin_autonomo_id', $user->id);
+        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+            $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
         } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
             // Admin principal ve solo técnicos del sistema principal (sin admin_autonomo_id)
             // O puede quitar este filtro para ver todos
@@ -55,6 +55,9 @@ class TrabajadorController extends Controller
             'password' => 'required|min:6',
             'puesto'   => 'required|string',
             'telefono' => 'nullable|string',
+            'fecha_nacimiento' => 'nullable|date',
+            'direccion' => 'nullable|string',
+            'rfc' => 'nullable|string'
         ]);
 
         // 🔥 Obtener rol trabajador dinámicamente
@@ -72,8 +75,8 @@ class TrabajadorController extends Controller
         // Determinar admin_autonomo_id
         $authUser = $request->user();
         $adminAutonomoId = null;
-        if ($authUser && $authUser->role && strtolower($authUser->role->name) === 'admin-autonomo') {
-            $adminAutonomoId = $authUser->id;
+        if ($authUser && $authUser->role && (strtolower($authUser->role->name) === 'admin-autonomo' || strtolower($authUser->role->name) === 'gerente-general')) {
+            $adminAutonomoId = $authUser->admin_autonomo_id ?? $authUser->id;
         }
 
         // 2️⃣ Crear trabajador
@@ -85,6 +88,9 @@ class TrabajadorController extends Controller
             'estado'           => 'Activo',
             'user_id'          => $user->id,
             'admin_autonomo_id' => $adminAutonomoId,
+            'fecha_nacimiento' => $request->fecha_nacimiento,
+            'direccion'        => $request->direccion,
+            'rfc'              => $request->rfc,
         ]);
 
         return response()->json($trabajador, 201);
@@ -134,7 +140,10 @@ class TrabajadorController extends Controller
             'correo' => 'sometimes|email|unique:users,email,' . ($trabajador->user_id ?? 0),
             'telefono' => 'nullable|string',
             'avatar' => 'nullable|string',
-            'puesto' => 'sometimes|string'
+            'puesto' => 'sometimes|string',
+            'fecha_nacimiento' => 'nullable|date',
+            'direccion' => 'nullable|string',
+            'rfc' => 'nullable|string'
         ]);
 
         $trabajador->update($request->all());

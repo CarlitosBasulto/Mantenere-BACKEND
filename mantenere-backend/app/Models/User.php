@@ -34,6 +34,7 @@ class User extends Authenticatable
         'role_id',
         'active',
         'negocio_id',
+        'admin_autonomo_id',
     ];
 
 
