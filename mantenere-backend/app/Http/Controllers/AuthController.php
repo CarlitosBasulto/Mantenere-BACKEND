@@ -47,7 +47,9 @@ class AuthController extends Controller
                 'name'       => $user->name,
                 'email'      => $user->email,
                 'role'       => $roleName,
-                'negocio_id' => $user->negocio_id, // <-- NUEVO: Retornar negocio_id
+                'negocio_id' => $user->negocio_id,
+                'admin_autonomo_id' => $user->admin_autonomo_id,
+                'cv_url'     => $user->cv_url,
             ]
         ]);
     }

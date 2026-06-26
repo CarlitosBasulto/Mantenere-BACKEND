@@ -20,9 +20,9 @@ class UserController extends Controller
         $usersQuery = User::with(['role', 'trabajador'])
             ->where('id', '!=', $authUser->id)
             ->whereHas('role', function ($query) use ($myLevel) {
-                // Root y Admin (level <= 1): ven su mismo nivel y todos los inferiores (>=)
-                // Sub-Admin y más bajos (level > 1): solo ven niveles estrictamente inferiores (>)
-                if ($myLevel <= 1) {
+                // Root y Admin (level <= 1), Admin Autonomo / Gerente (level <= 2): ven su mismo nivel y todos los inferiores (>=)
+                // Sub-Admin y más bajos (level > 2): solo ven niveles estrictamente inferiores (>)
+                if ($myLevel <= 2) {
                     $query->where('hierarchy_level', '>=', $myLevel);
                 } else {
                     $query->where('hierarchy_level', '>', $myLevel);
@@ -207,6 +207,10 @@ class UserController extends Controller
 
         if ($request->has('avatar')) {
             $user->avatar = $request->avatar;
+        }
+
+        if ($request->has('cv_url')) {
+            $user->cv_url = $request->cv_url;
         }
 
         $user->save();

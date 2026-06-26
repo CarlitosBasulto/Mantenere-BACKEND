@@ -15,7 +15,7 @@ class ImageController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // Máx 5MB
+            'foto' => 'required|file|max:20480', // Máx 20MB
         ]);
 
         if ($request->hasFile('foto')) {
@@ -23,8 +23,10 @@ class ImageController extends Controller
             
             try {
                 if (env('CLOUDINARY_URL')) {
-                    // Subir directamente a Cloudinary
-                    $result = cloudinary()->uploadApi()->upload($file->getRealPath());
+                    // Subir directamente a Cloudinary con resource_type auto para soportar PDFs
+                    $result = cloudinary()->uploadApi()->upload($file->getRealPath(), [
+                        'resource_type' => 'auto'
+                    ]);
                     $uploadedFileUrl = $result['secure_url'];
                 } else {
                     // Fallback local si no hay Cloudinary

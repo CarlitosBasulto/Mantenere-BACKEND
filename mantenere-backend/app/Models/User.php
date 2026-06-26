@@ -30,6 +30,7 @@ class User extends Authenticatable
         'razon_social',
         'direccion_fiscal',
         'avatar',
+        'cv_url',
         'password',
         'role_id',
         'active',
