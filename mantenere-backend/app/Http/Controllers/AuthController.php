@@ -40,6 +40,27 @@ class AuthController extends Controller
             $roleName = 'autonomo';
         }
 
+        // Calcular el admin_autonomo_id efectivo
+        $effectiveAdminAutonomoId = $user->admin_autonomo_id;
+        if (!$effectiveAdminAutonomoId) {
+            if ($roleName === 'encargado' && $user->negocio_id) {
+                $negocio = \App\Models\Negocio::find($user->negocio_id);
+                if ($negocio) {
+                    $effectiveAdminAutonomoId = $negocio->admin_autonomo_id;
+                }
+            } elseif ($roleName === 'tecnico') {
+                $trabajador = \App\Models\Trabajador::where('user_id', $user->id)->first();
+                if ($trabajador) {
+                    $effectiveAdminAutonomoId = $trabajador->admin_autonomo_id;
+                }
+            } elseif ($roleName === 'cliente') {
+                $negocio = \App\Models\Negocio::where('user_id', $user->id)->first();
+                if ($negocio) {
+                    $effectiveAdminAutonomoId = $negocio->admin_autonomo_id;
+                }
+            }
+        }
+
         return response()->json([
             'token' => $token,
             'user'  => [
@@ -48,7 +69,7 @@ class AuthController extends Controller
                 'email'      => $user->email,
                 'role'       => $roleName,
                 'negocio_id' => $user->negocio_id,
-                'admin_autonomo_id' => $user->admin_autonomo_id,
+                'admin_autonomo_id' => $effectiveAdminAutonomoId,
                 'cv_url'     => $user->cv_url,
             ]
         ]);
