@@ -21,9 +21,17 @@ class TrabajadorController extends Controller
 
         if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
+        } elseif ($roleName === 'encargado') {
+            $encargadoAdminId = $user->admin_autonomo_id;
+            if (!$encargadoAdminId && $user->negocio_id) {
+                $negocio = \App\Models\Negocio::find($user->negocio_id);
+                if ($negocio) {
+                    $encargadoAdminId = $negocio->admin_autonomo_id;
+                }
+            }
+            $query->where('admin_autonomo_id', $encargadoAdminId);
         } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
             // Admin principal ve solo técnicos del sistema principal (sin admin_autonomo_id)
-            // O puede quitar este filtro para ver todos
             $query->whereNull('admin_autonomo_id');
         }
 

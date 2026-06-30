@@ -93,6 +93,8 @@ Route::delete('/cotizaciones/{id}', [App\Http\Controllers\Api\CotizacionControll
 Route::get('/notificaciones/usuario/{user_id}', [App\Http\Controllers\Api\NotificacionController::class , 'indexByUsuario']);
 Route::post('/notificaciones', [App\Http\Controllers\Api\NotificacionController::class , 'store']);
 Route::post('/notificaciones/rol', [App\Http\Controllers\Api\NotificacionController::class , 'notifyByRole']);
+Route::post('/notificaciones/ecosistema', [App\Http\Controllers\Api\NotificacionController::class , 'notifyEcosistema']);
+Route::post('/notificaciones/negocio', [App\Http\Controllers\Api\NotificacionController::class , 'notifyNegocio']);
 Route::put('/notificaciones/{id}/leer', [App\Http\Controllers\Api\NotificacionController::class , 'markAsRead']);
 Route::put('/notificaciones/usuario/{user_id}/leer-todas', [App\Http\Controllers\Api\NotificacionController::class , 'markAllAsRead']);
 
@@ -159,5 +161,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // 💬 RUTAS DE CHAT DE TRABAJOS
     Route::get('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'index']);
     Route::post('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'store']);
+    Route::post('/trabajos/{id}/quote-action', [App\Http\Controllers\Api\ChatController::class, 'quoteAction']);
 });
     Route::delete('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'destroy']);

@@ -26,52 +26,93 @@ class ChatController extends Controller
     public function store(Request $request, $trabajoId)
     {
         $request->validate([
-            'message' => 'required|string'
+            'message' => 'required|string',
+            'is_quote' => 'boolean',
+            'quote_amount' => 'numeric|nullable'
         ]);
 
         $chat = \App\Models\TrabajoChat::create([
             'trabajo_id' => $trabajoId,
             'sender_id' => $request->user()->id,
-            'message' => $request->message
+            'message' => $request->message,
+            'is_quote' => $request->boolean('is_quote', false),
+            'quote_amount' => $request->quote_amount
         ]);
 
         $chat->load('sender:id,name,role_id');
         $chat->sender->load('role:id,name');
 
-        // Podríamos enviar notificación al otro usuario aquí (Encargado -> Admin o Admin -> Encargado)
-        // Lo podemos manejar también desde el frontend o aquí. Lo más robusto es aquí:
+        // Notificar a las otras partes involucradas
         $trabajo = \App\Models\Trabajo::with('negocio')->findOrFail($trabajoId);
-        $roleName = strtolower($request->user()->role->name);
+        $senderId = $request->user()->id;
         
-        $notifyUserId = null;
-        if ($roleName === 'admin-autonomo') {
-            // Notificar al encargado
-            $roleEncargado = \App\Models\Role::where('name', 'encargado')->first();
-            $encargado = \App\Models\User::where('negocio_id', $trabajo->negocio_id)
-                                         ->where('role_id', $roleEncargado->id)
-                                         ->first();
-            if ($encargado) {
-                $notifyUserId = $encargado->id;
-            }
-        } elseif ($roleName === 'encargado') {
-            // Notificar al admin-autonomo
-            if ($trabajo->negocio && $trabajo->negocio->admin_autonomo_id) {
-                $notifyUserId = $trabajo->negocio->admin_autonomo_id;
+        $usersToNotify = [];
+        
+        // 1. Técnico
+        if ($trabajo->trabajador_id && $trabajo->trabajador_id != $senderId) {
+            $tecnico = \App\Models\Trabajador::find($trabajo->trabajador_id);
+            if ($tecnico && $tecnico->user_id != $senderId) {
+                $usersToNotify[] = $tecnico->user_id;
             }
         }
+        
+        // 2. Subgerente (Encargado del negocio)
+        if ($trabajo->negocio && $trabajo->negocio->encargado_id && $trabajo->negocio->encargado_id != $senderId) {
+            $usersToNotify[] = $trabajo->negocio->encargado_id;
+        }
 
-        if ($notifyUserId) {
-            \App\Models\Notification::create([
-                'user_id' => $notifyUserId,
-                'type' => 'nuevo_mensaje',
-                'data' => [
-                    'trabajo_id' => $trabajoId,
-                    'message' => 'Nuevo mensaje en la solicitud #' . $trabajoId
-                ],
-                'is_read' => false
+        // 3. Admin / Gerente General (quien haya creado el ecosistema o sea admin)
+        if ($trabajo->admin_autonomo_id && $trabajo->admin_autonomo_id != $senderId) {
+            $usersToNotify[] = $trabajo->admin_autonomo_id;
+        }
+
+
+        foreach ($usersToNotify as $uid) {
+            \App\Models\Notificacion::create([
+                'user_id' => $uid,
+                'titulo' => '💬 Nuevo mensaje en el chat',
+                'mensaje' => 'Nuevo mensaje de ' . $request->user()->name . ' en la solicitud #' . $trabajoId,
+                'enlace' => null, // El chat es flotante, así que pueden abrirlo desde donde estén si tienen el ID
+                'leido' => false
             ]);
         }
 
         return response()->json($chat);
+    }
+
+    public function quoteAction(Request $request, $trabajoId)
+    {
+        $request->validate([
+            'action' => 'required|in:accept,reject',
+            'reason' => 'nullable|string'
+        ]);
+
+        $trabajo = \App\Models\Trabajo::findOrFail($trabajoId);
+        $user = $request->user();
+
+        if ($request->action === 'accept') {
+            $trabajo->estado = 'Trabajo';
+            $trabajo->save();
+            $message = 'Ha aceptado la propuesta. ¡El trabajo ha iniciado!';
+        } else {
+            $message = 'Ha rechazado la propuesta. Motivo: ' . $request->reason;
+        }
+
+        $chat = \App\Models\TrabajoChat::create([
+            'trabajo_id' => $trabajoId,
+            'sender_id' => $user->id,
+            'message' => $message,
+            'is_quote' => false,
+            'quote_amount' => null
+        ]);
+
+        $chat->load('sender:id,name,role_id');
+        $chat->sender->load('role:id,name');
+
+        return response()->json([
+            'message' => 'Acción registrada con éxito',
+            'chat' => $chat,
+            'trabajo' => $trabajo
+        ]);
     }
 }

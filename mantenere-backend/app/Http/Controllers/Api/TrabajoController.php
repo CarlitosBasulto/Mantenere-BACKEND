@@ -51,6 +51,7 @@ class TrabajoController extends Controller
             'foto' => 'nullable|image|max:5120', // Hasta 5MB
             'fotos' => 'nullable|array',
             'fotos.*' => 'image|max:5120',
+            'trabajador_id' => 'nullable|exists:trabajadores,id'
         ]);
 
         $fotoUrls = [];
@@ -96,6 +97,7 @@ class TrabajoController extends Controller
             'fecha_programada'   => $request->fecha_programada,
             'foto_url'           => $fotoUrl,
             'admin_autonomo_id'  => $adminAutonomoId,
+            'trabajador_id'      => $request->trabajador_id,
         ]);
 
         return response()->json($trabajo, 201);

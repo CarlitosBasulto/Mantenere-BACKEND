@@ -106,4 +106,65 @@ class NotificacionController extends Controller
             'count' => count($notifications)
         ]);
     }
+
+    public function notifyEcosistema(Request $request)
+    {
+        $request->validate([
+            'admin_autonomo_id' => 'required|integer',
+            'titulo' => 'required|string',
+            'mensaje' => 'required|string',
+            'enlace' => 'nullable|string',
+        ]);
+
+        $users = \App\Models\User::where('admin_autonomo_id', $request->admin_autonomo_id)
+            ->whereHas('role', function($query) {
+                $query->whereIn('name', ['admin-autonomo', 'gerente-general']);
+            })
+            ->orWhere('id', $request->admin_autonomo_id)
+            ->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notificacion::create([
+                'user_id' => $user->id,
+                'titulo' => $request->titulo,
+                'mensaje' => $request->mensaje,
+                'enlace' => $request->enlace,
+                'leido' => false
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Notificaciones enviadas al ecosistema',
+            'count' => count($notifications)
+        ]);
+    }
+
+    public function notifyNegocio(Request $request)
+    {
+        $request->validate([
+            'negocio_id' => 'required|integer',
+            'titulo' => 'required|string',
+            'mensaje' => 'required|string',
+            'enlace' => 'nullable|string',
+        ]);
+
+        $users = \App\Models\User::where('negocio_id', $request->negocio_id)->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notificacion::create([
+                'user_id' => $user->id,
+                'titulo' => $request->titulo,
+                'mensaje' => $request->mensaje,
+                'enlace' => $request->enlace,
+                'leido' => false
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Notificaciones enviadas a usuarios del negocio',
+            'count' => count($notifications)
+        ]);
+    }
 }
