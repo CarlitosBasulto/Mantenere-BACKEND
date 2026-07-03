@@ -18,6 +18,7 @@ class Trabajador extends Model
         'estado',
         'user_id',
         'admin_autonomo_id',
+        'creador_id',
         'fecha_nacimiento',
         'direccion',
         'rfc'

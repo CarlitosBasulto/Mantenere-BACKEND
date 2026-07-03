@@ -31,8 +31,9 @@ class TrabajadorController extends Controller
             }
             $query->where('admin_autonomo_id', $encargadoAdminId);
         } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
-            // Admin principal ve solo técnicos del sistema principal (sin admin_autonomo_id)
-            $query->whereNull('admin_autonomo_id');
+            // Admin principal solo ve los técnicos creados por él mismo o el sistema (creador_id nulo)
+            // Cuando comparte un técnico, creador_id sigue siendo null, por lo que no lo pierde de vista.
+            $query->whereNull('creador_id');
         }
 
         return response()->json($query->get());
@@ -96,6 +97,7 @@ class TrabajadorController extends Controller
             'estado'           => 'Activo',
             'user_id'          => $user->id,
             'admin_autonomo_id' => $adminAutonomoId,
+            'creador_id'       => $adminAutonomoId, // Registramos quién lo creó originalmente
             'fecha_nacimiento' => $request->fecha_nacimiento,
             'direccion'        => $request->direccion,
             'rfc'              => $request->rfc,
@@ -151,7 +153,8 @@ class TrabajadorController extends Controller
             'puesto' => 'sometimes|string',
             'fecha_nacimiento' => 'nullable|date',
             'direccion' => 'nullable|string',
-            'rfc' => 'nullable|string'
+            'rfc' => 'nullable|string',
+            'admin_autonomo_id' => 'nullable|integer'
         ]);
 
         $trabajador->update($request->all());
@@ -161,6 +164,7 @@ class TrabajadorController extends Controller
             if ($request->has('nombre')) $trabajador->user->name = $request->nombre;
             if ($request->has('correo')) $trabajador->user->email = $request->correo;
             if ($request->has('avatar')) $trabajador->user->avatar = $request->avatar;
+            if ($request->has('admin_autonomo_id')) $trabajador->user->admin_autonomo_id = $request->admin_autonomo_id;
             $trabajador->user->save();
         }
 
