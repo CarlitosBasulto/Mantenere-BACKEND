@@ -17,6 +17,17 @@ Route::get('/debug-dir', function () {
     return response()->json(array_diff(scandir($dir), array('.', '..')));
 });
 
+Route::get('/debug-create', function () {
+    $path = 'trabajos/fotos/dummy.txt';
+    Illuminate\Support\Facades\Storage::disk('public')->put($path, 'dummy content');
+    return response()->json([
+        'path' => $path,
+        'url' => asset('storage/' . $path),
+        'full_path' => storage_path('app/public/' . $path),
+        'exists' => file_exists(storage_path('app/public/' . $path))
+    ]);
+});
+
 // Ruta de rescate universal para servir TODO el contenido de storage/app/public en entornos como Railway
 Route::get('/storage/{path}', function ($path) {
     $fullPath = storage_path('app/public/' . $path);
