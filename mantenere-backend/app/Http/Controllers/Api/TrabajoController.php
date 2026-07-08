@@ -56,18 +56,18 @@ class TrabajoController extends Controller
 
         $fotoUrls = [];
         if ($request->hasFile('foto')) {
-            $uploaded = cloudinary()->upload($request->file('foto')->getRealPath(), [
+            $result = cloudinary()->uploadApi()->upload($request->file('foto')->getRealPath(), [
                 'folder' => 'mantenere/trabajos',
             ]);
-            $fotoUrls[] = $uploaded->getSecurePath();
+            $fotoUrls[] = $result['secure_url'];
         }
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $file) {
-                $uploaded = cloudinary()->upload($file->getRealPath(), [
+                $result = cloudinary()->uploadApi()->upload($file->getRealPath(), [
                     'folder' => 'mantenere/trabajos',
                 ]);
-                $fotoUrls[] = $uploaded->getSecurePath();
+                $fotoUrls[] = $result['secure_url'];
             }
         }
 
