@@ -11,11 +11,23 @@ Route::get('/debug-fotos', function () {
     return response()->json($trabajos);
 });
 
+Route::get('/debug-dir', function () {
+    $dir = storage_path('app/public/trabajos/fotos');
+    if (!is_dir($dir)) return 'No dir: ' . $dir;
+    return response()->json(array_diff(scandir($dir), array('.', '..')));
+});
+
 // Ruta de rescate universal para servir TODO el contenido de storage/app/public en entornos como Railway
 Route::get('/storage/{path}', function ($path) {
     $fullPath = storage_path('app/public/' . $path);
     if (!file_exists($fullPath)) {
-        abort(404);
+        return response()->json([
+            'error' => 'File not found',
+            'path_requested' => $path,
+            'full_path_checked' => $fullPath,
+            'storage_app_public_exists' => is_dir(storage_path('app/public')),
+            'trabajos_fotos_exists' => is_dir(storage_path('app/public/trabajos/fotos')),
+        ], 404);
     }
     
     $mimeType = \Illuminate\Support\Facades\File::mimeType($fullPath);
