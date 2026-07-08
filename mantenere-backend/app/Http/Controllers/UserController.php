@@ -131,6 +131,13 @@ class UserController extends Controller
             ], 403);
         }
 
+        // 🔥 Un gerente-general no puede modificar a un admin-autonomo aunque tengan el mismo nivel de jerarquía
+        if ($authUser->role->name === 'gerente-general' && $user->role->name === 'admin-autonomo') {
+            return response()->json([
+                'message' => 'No tienes permisos para modificar al Admin Autónomo'
+            ], 403);
+        }
+
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
@@ -237,6 +244,13 @@ class UserController extends Controller
         if ($user->role->hierarchy_level < $authUser->role->hierarchy_level) {
             return response()->json([
                 'message' => 'No puedes eliminar un usuario con mayor jerarquía'
+            ], 403);
+        }
+
+        // 🔥 Un gerente-general no puede eliminar a un admin-autonomo aunque tengan el mismo nivel
+        if ($authUser->role->name === 'gerente-general' && $user->role->name === 'admin-autonomo') {
+            return response()->json([
+                'message' => 'No tienes permisos para eliminar al Admin Autónomo'
             ], 403);
         }
 
