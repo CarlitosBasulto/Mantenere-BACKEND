@@ -55,18 +55,20 @@ class TrabajoController extends Controller
         ]);
 
         $fotoUrls = [];
+        $cloudinaryOptions = [
+            'folder'    => 'mantenere/trabajos',
+            'quality'   => 'auto:low',
+            'fetch_format' => 'auto',
+        ];
+
         if ($request->hasFile('foto')) {
-            $result = cloudinary()->uploadApi()->upload($request->file('foto')->getRealPath(), [
-                'folder' => 'mantenere/trabajos',
-            ]);
+            $result = cloudinary()->uploadApi()->upload($request->file('foto')->getRealPath(), $cloudinaryOptions);
             $fotoUrls[] = $result['secure_url'];
         }
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $file) {
-                $result = cloudinary()->uploadApi()->upload($file->getRealPath(), [
-                    'folder' => 'mantenere/trabajos',
-                ]);
+                $result = cloudinary()->uploadApi()->upload($file->getRealPath(), $cloudinaryOptions);
                 $fotoUrls[] = $result['secure_url'];
             }
         }
