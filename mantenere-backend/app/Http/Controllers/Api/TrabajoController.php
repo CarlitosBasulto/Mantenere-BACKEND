@@ -55,15 +55,38 @@ class TrabajoController extends Controller
         ]);
 
         $fotoUrls = [];
+        $useCloudinary = !empty(env('CLOUDINARY_URL'));
+
         if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('trabajos/fotos', 'public');
-            $fotoUrls[] = asset('storage/' . $path);
+            $file = $request->file('foto');
+            if ($useCloudinary) {
+                try {
+                    $result = cloudinary()->uploadApi()->upload($file->getRealPath(), ['folder' => 'trabajos/fotos']);
+                    $fotoUrls[] = $result['secure_url'];
+                } catch (\Exception $e) {
+                    $path = $file->store('trabajos/fotos', 'public');
+                    $fotoUrls[] = asset('storage/' . $path);
+                }
+            } else {
+                $path = $file->store('trabajos/fotos', 'public');
+                $fotoUrls[] = asset('storage/' . $path);
+            }
         }
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $file) {
-                $path = $file->store('trabajos/fotos', 'public');
-                $fotoUrls[] = asset('storage/' . $path);
+                if ($useCloudinary) {
+                    try {
+                        $result = cloudinary()->uploadApi()->upload($file->getRealPath(), ['folder' => 'trabajos/fotos']);
+                        $fotoUrls[] = $result['secure_url'];
+                    } catch (\Exception $e) {
+                        $path = $file->store('trabajos/fotos', 'public');
+                        $fotoUrls[] = asset('storage/' . $path);
+                    }
+                } else {
+                    $path = $file->store('trabajos/fotos', 'public');
+                    $fotoUrls[] = asset('storage/' . $path);
+                }
             }
         }
 
