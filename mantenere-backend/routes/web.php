@@ -6,6 +6,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Ruta ligera para keep-alive (sin DB)
+Route::get('/ping', function () {
+    return response()->json(['status' => 'ok', 'time' => now()->toISOString()]);
+});
+
 Route::get('/debug-fotos', function () {
     $trabajos = \App\Models\Trabajo::orderBy('id', 'desc')->take(5)->get(['id', 'titulo', 'foto_url']);
     return response()->json($trabajos);
