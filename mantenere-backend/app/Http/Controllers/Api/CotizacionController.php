@@ -32,20 +32,7 @@ class CotizacionController extends Controller
 
         $pathArchivo = null;
         if ($request->hasFile('archivo')) {
-            $file = $request->file('archivo');
-            if (!empty(env('CLOUDINARY_URL'))) {
-                try {
-                    $result = cloudinary()->uploadApi()->upload($file->getRealPath(), [
-                        'folder' => 'cotizaciones',
-                        'resource_type' => 'auto'
-                    ]);
-                    $pathArchivo = $result['secure_url'];
-                } catch (\Exception $e) {
-                    $pathArchivo = $file->store('cotizaciones', 'public');
-                }
-            } else {
-                $pathArchivo = $file->store('cotizaciones', 'public');
-            }
+            $pathArchivo = $request->file('archivo')->store('cotizaciones', 'public');
         }
 
         $cotizacion = Cotizacion::create([
@@ -99,20 +86,7 @@ class CotizacionController extends Controller
 
         $pathArchivo = $cotizacion->archivo;
         if ($request->hasFile('archivo')) {
-            $file = $request->file('archivo');
-            if (!empty(env('CLOUDINARY_URL'))) {
-                try {
-                    $result = cloudinary()->uploadApi()->upload($file->getRealPath(), [
-                        'folder' => 'cotizaciones',
-                        'resource_type' => 'auto'
-                    ]);
-                    $pathArchivo = $result['secure_url'];
-                } catch (\Exception $e) {
-                    $pathArchivo = $file->store('cotizaciones', 'public');
-                }
-            } else {
-                $pathArchivo = $file->store('cotizaciones', 'public');
-            }
+            $pathArchivo = $request->file('archivo')->store('cotizaciones', 'public');
         }
 
         $cotizacion->update([
