@@ -186,6 +186,7 @@ class UserController extends Controller
 
         if ($request->has('password')) {
             $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+            $user->must_change_password = true;
         }
 
         if ($request->has('role_id')) {

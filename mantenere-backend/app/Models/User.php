@@ -36,6 +36,7 @@ class User extends Authenticatable
         'active',
         'negocio_id',
         'admin_autonomo_id',
+        'must_change_password',
     ];
 
 

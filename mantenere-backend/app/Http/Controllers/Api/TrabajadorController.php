@@ -78,7 +78,8 @@ class TrabajadorController extends Controller
             'email'    => $request->correo,
             'password' => Hash::make($request->password),
             'role_id'  => $roleTrabajador->id,
-            'active'   => 1
+            'active'   => 1,
+            'must_change_password' => true
         ]);
 
         // Determinar admin_autonomo_id

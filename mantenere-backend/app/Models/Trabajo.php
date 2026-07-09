@@ -20,7 +20,10 @@ class Trabajo extends Model
         'negocio_id',
         'fecha_programada',
         'foto_url',
-        'admin_autonomo_id'
+        'admin_autonomo_id',
+        'hora_llegada',
+        'latitud_llegada',
+        'longitud_llegada'
     ];
 
     public function trabajador()

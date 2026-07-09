@@ -55,6 +55,7 @@ class TrabajoController extends Controller
         ]);
 
         $fotoUrls = [];
+        $isLocal = app()->environment('local');
         $cloudinaryOptions = [
             'folder'    => 'mantenere/trabajos',
             'quality'   => 'auto:low',
@@ -62,14 +63,24 @@ class TrabajoController extends Controller
         ];
 
         if ($request->hasFile('foto')) {
-            $result = cloudinary()->uploadApi()->upload($request->file('foto')->getRealPath(), $cloudinaryOptions);
-            $fotoUrls[] = $result['secure_url'];
+            if ($isLocal) {
+                $path = $request->file('foto')->store('trabajos/fotos', 'public');
+                $fotoUrls[] = asset('storage/' . $path);
+            } else {
+                $result = cloudinary()->uploadApi()->upload($request->file('foto')->getRealPath(), $cloudinaryOptions);
+                $fotoUrls[] = $result['secure_url'];
+            }
         }
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $file) {
-                $result = cloudinary()->uploadApi()->upload($file->getRealPath(), $cloudinaryOptions);
-                $fotoUrls[] = $result['secure_url'];
+                if ($isLocal) {
+                    $path = $file->store('trabajos/fotos', 'public');
+                    $fotoUrls[] = asset('storage/' . $path);
+                } else {
+                    $result = cloudinary()->uploadApi()->upload($file->getRealPath(), $cloudinaryOptions);
+                    $fotoUrls[] = $result['secure_url'];
+                }
             }
         }
 
@@ -163,7 +174,10 @@ class TrabajoController extends Controller
     {
         $request->validate([
             'estado' => 'required|string',
-            'visitado' => 'nullable|boolean'
+            'visitado' => 'nullable|boolean',
+            'hora_llegada' => 'nullable|string',
+            'latitud_llegada' => 'nullable|string',
+            'longitud_llegada' => 'nullable|string',
         ]);
 
         $trabajo = Trabajo::findOrFail($id);
@@ -171,6 +185,18 @@ class TrabajoController extends Controller
         
         if ($request->has('visitado')) {
             $trabajo->visitado = $request->visitado;
+        }
+        
+        if ($request->has('hora_llegada')) {
+            $trabajo->hora_llegada = $request->hora_llegada;
+        }
+
+        if ($request->has('latitud_llegada')) {
+            $trabajo->latitud_llegada = $request->latitud_llegada;
+        }
+
+        if ($request->has('longitud_llegada')) {
+            $trabajo->longitud_llegada = $request->longitud_llegada;
         }
         
         $trabajo->save();

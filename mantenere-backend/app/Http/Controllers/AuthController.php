@@ -71,6 +71,7 @@ class AuthController extends Controller
                 'negocio_id' => $user->negocio_id,
                 'admin_autonomo_id' => $effectiveAdminAutonomoId,
                 'cv_url'     => $user->cv_url,
+                'must_change_password' => $user->must_change_password,
             ]
         ]);
     }
@@ -121,5 +122,26 @@ class AuthController extends Controller
                 'role' => $user->role ? $user->role->name : 'cliente'
             ]
         ], 201);
+    }
+
+    public function changeMandatoryPassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no autenticado'], 401);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->must_change_password = false;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Contraseña actualizada correctamente.'
+        ]);
     }
 }
