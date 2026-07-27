@@ -72,7 +72,7 @@ class ChatController extends Controller
                 'user_id' => $uid,
                 'titulo' => '💬 Nuevo mensaje en el chat',
                 'mensaje' => 'Nuevo mensaje de ' . $request->user()->name . ' en la solicitud #' . $trabajoId,
-                'enlace' => null, // El chat es flotante, así que pueden abrirlo desde donde estén si tienen el ID
+                'enlace' => '/menu/trabajo-detalle/' . $trabajoId . '?tab=cotizacion',
                 'leido' => false
             ]);
         }
