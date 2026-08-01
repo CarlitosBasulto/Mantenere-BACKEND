@@ -195,6 +195,9 @@ class NegocioController extends Controller
                         'foto' => $eqInput['foto'] ?? null,
                         'fotoPlaca' => $eqInput['fotoPlaca'] ?? null,
                         'categoria_id' => $eqInput['categoria_id'] ?? null,
+                        'subAreaId' => $eqInput['subAreaId'] ?? null,
+                        'nombreSubArea' => $eqInput['nombreSubArea'] ?? null,
+                        'subCategoria' => $eqInput['subCategoria'] ?? null,
                     ]);
                     $area->equipos()->save($equipo);
                 }

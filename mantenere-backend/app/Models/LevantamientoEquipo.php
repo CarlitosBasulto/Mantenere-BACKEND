@@ -10,8 +10,8 @@ class LevantamientoEquipo extends Model
     protected $table = 'levantamiento_equipos'; // Forzar nombre de tabla
     
     protected $fillable = [
-        'levantamiento_area_id', 'categoria_id', 'nombre', 'marca', 'modelo', 
-        'serie', 'anioFabricacion', 'anioUso', 'foto', 'fotoPlaca'
+        'levantamiento_area_id', 'categoria_id', 'subAreaId', 'nombreSubArea', 'subCategoria',
+        'nombre', 'marca', 'modelo', 'serie', 'anioFabricacion', 'anioUso', 'foto', 'fotoPlaca'
     ];
 
     public function categoria()
