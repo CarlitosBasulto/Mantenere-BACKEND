@@ -163,5 +163,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'index']);
     Route::post('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'store']);
     Route::post('/trabajos/{id}/quote-action', [App\Http\Controllers\Api\ChatController::class, 'quoteAction']);
+
+    // 🏢 RUTAS DE SOLICITUDES DE TÉCNICO PROVEEDOR
+    Route::post('/tecnico/solicitar-proveedor', [App\Http\Controllers\Api\SolicitudProveedorController::class, 'store']);
+    Route::get('/tecnico/mi-solicitud-proveedor', [App\Http\Controllers\Api\SolicitudProveedorController::class, 'miSolicitud']);
+    Route::get('/admin/solicitudes-proveedor', [App\Http\Controllers\Api\SolicitudProveedorController::class, 'index']);
+    Route::get('/admin/solicitudes-proveedor/{id}', [App\Http\Controllers\Api\SolicitudProveedorController::class, 'show']);
+    Route::put('/admin/solicitudes-proveedor/{id}/aprobar', [App\Http\Controllers\Api\SolicitudProveedorController::class, 'aprobar']);
+    Route::put('/admin/solicitudes-proveedor/{id}/rechazar', [App\Http\Controllers\Api\SolicitudProveedorController::class, 'rechazar']);
 });
-    Route::delete('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'destroy']);
+Route::delete('/trabajos/{id}/chat', [App\Http\Controllers\Api\ChatController::class, 'destroy']);
