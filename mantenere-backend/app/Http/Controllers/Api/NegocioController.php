@@ -169,8 +169,22 @@ class NegocioController extends Controller
                 $area->nombreArea = $areaInput['nombreArea'];
                 $negocio->areas()->save($area);
 
-                // Sincronizar Equipos
-                $equiposData = $areaInput['equipos'] ?? [];
+                // Sincronizar Equipos (recolectando de equipos principales y subAreas)
+                $rawEquipos = $areaInput['equipos'] ?? [];
+                if (isset($areaInput['subAreas']) && is_array($areaInput['subAreas'])) {
+                    foreach ($areaInput['subAreas'] as $subAreaInput) {
+                        if (isset($subAreaInput['equipos']) && is_array($subAreaInput['equipos'])) {
+                            $rawEquipos = array_merge($rawEquipos, $subAreaInput['equipos']);
+                        }
+                    }
+                }
+
+                $uniqueEquipos = [];
+                foreach ($rawEquipos as $eq) {
+                    $key = isset($eq['id']) && is_numeric($eq['id']) ? 'id_'.$eq['id'] : 'name_'.($eq['nombre'] ?? '').'_'.($eq['subAreaId'] ?? '');
+                    $uniqueEquipos[$key] = $eq;
+                }
+                $equiposData = array_values($uniqueEquipos);
                 
                 $incomingEqIds = collect($equiposData)->pluck('id')->filter(function($id) {
                     return is_numeric($id);
