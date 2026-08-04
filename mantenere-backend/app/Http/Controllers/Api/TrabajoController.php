@@ -20,8 +20,25 @@ class TrabajoController extends Controller
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
         } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
             $query->whereNull('admin_autonomo_id');
+        } elseif ($roleName === 'encargado') {
+            if (isset($user->negocio_id)) {
+                $query->where('negocio_id', $user->negocio_id);
+            }
+        } elseif ($roleName === 'cliente') {
+            $negociosIds = \App\Models\Negocio::where('user_id', $user->id)
+                ->orWhere('dueno', $user->name)
+                ->pluck('id');
+            $query->whereIn('negocio_id', $negociosIds);
         }
-        // Técnicos y clientes: los trabajos ya tienen su negocio_id que los delimita
+        
+        // Filtros dinámicos recibidos por query parameters
+        if ($request->has('negocio_id')) {
+            $query->where('negocio_id', $request->query('negocio_id'));
+        }
+
+        if ($request->has('trabajador_id')) {
+            $query->where('trabajador_id', $request->query('trabajador_id'));
+        }
 
         return response()->json($query->get());
     }

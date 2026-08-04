@@ -14,6 +14,9 @@ class MantenimientoSolicitudController extends Controller
     // GET /api/mantenimiento-solicitudes (Para el Admin o para listar)
     public function index(Request $request)
     {
+        $user = $request->user();
+        $roleName = $user && $user->role ? strtolower($user->role->name) : '';
+
         $query = MantenimientoSolicitud::with([
             'cliente', 
             'negocio', 
@@ -22,8 +25,20 @@ class MantenimientoSolicitudController extends Controller
             'reparacionTrabajo.reporte'
         ]);
 
+        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+            $query->whereHas('negocio', function ($q) use ($user) {
+                $q->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
+            });
+        } elseif ($roleName === 'encargado') {
+            if (isset($user->negocio_id)) {
+                $query->where('negocio_id', $user->negocio_id);
+            }
+        } elseif ($roleName === 'cliente') {
+            $query->where('cliente_id', $user->id);
+        }
+
         if ($request->has('negocio_id')) {
-            $query->where('negocio_id', $request->negocio_id);
+            $query->where('negocio_id', $request->query('negocio_id'));
         }
 
         $solicitudes = $query->orderBy('created_at', 'desc')->get();
