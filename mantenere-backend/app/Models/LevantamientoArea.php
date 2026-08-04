@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 class LevantamientoArea extends Model
 {
     use HasFactory;
-    protected $fillable = ['negocio_id', 'nombreArea'];
+    protected $fillable = ['negocio_id', 'nombreArea', 'sub_areas_json'];
     
+    protected $casts = [
+        'sub_areas_json' => 'array',
+    ];
+
     public function equipos()
     {
         return $this->hasMany(LevantamientoEquipo::class);

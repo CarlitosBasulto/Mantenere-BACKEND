@@ -167,6 +167,18 @@ class NegocioController extends Controller
                 if (!$area && is_numeric($areaInput['id'])) continue;
 
                 $area->nombreArea = $areaInput['nombreArea'];
+
+                $cleanSubAreas = [];
+                if (isset($areaInput['subAreas']) && is_array($areaInput['subAreas'])) {
+                    foreach ($areaInput['subAreas'] as $subAreaInput) {
+                        $cleanSubAreas[] = [
+                            'id' => $subAreaInput['id'] ?? null,
+                            'nombreSubArea' => $subAreaInput['nombreSubArea'] ?? null
+                        ];
+                    }
+                }
+                $area->sub_areas_json = $cleanSubAreas;
+
                 $negocio->areas()->save($area);
 
                 // Sincronizar Equipos (recolectando de equipos principales y subAreas)
