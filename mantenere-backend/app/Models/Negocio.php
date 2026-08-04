@@ -32,4 +32,9 @@ class Negocio extends Model
     {
         return $this->hasMany(LevantamientoArea::class);
     }
+
+    public function encargados()
+    {
+        return $this->hasMany(User::class, 'negocio_id');
+    }
 }

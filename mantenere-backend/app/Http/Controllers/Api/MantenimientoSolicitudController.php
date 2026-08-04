@@ -67,6 +67,45 @@ class MantenimientoSolicitudController extends Controller
             'estado' => 'Pendiente',
         ]);
 
+        // Notificar al Encargado y Admin Autónomo
+        $negocio = \App\Models\Negocio::with(['encargados'])->find($request->negocio_id);
+        if ($negocio) {
+            $solicitud->load('levantamientoEquipo');
+            $equipoNombre = $solicitud->levantamientoEquipo->nombre ?? 'Equipo';
+            $mensaje = "El cliente ha creado una nueva solicitud de mantenimiento para el equipo: " . $equipoNombre . " en la sucursal " . $negocio->nombre . ".";
+
+            if ($negocio->admin_autonomo_id) {
+                $ecosistemaUsers = \App\Models\User::where('admin_autonomo_id', $negocio->admin_autonomo_id)
+                    ->whereHas('role', function($query) {
+                        $query->whereIn('name', ['admin-autonomo', 'gerente-general']);
+                    })
+                    ->orWhere('id', $negocio->admin_autonomo_id)
+                    ->get();
+
+                foreach ($ecosistemaUsers as $ecoUser) {
+                    Notificacion::create([
+                        'user_id' => $ecoUser->id,
+                        'titulo' => 'NUEVA SOLICITUD ✨',
+                        'mensaje' => $mensaje,
+                        'tipo' => 'mantenimiento',
+                        'enlace' => '/autonomo/mantenimiento-detalle/' . $solicitud->id,
+                        'leido' => false,
+                    ]);
+                }
+            }
+
+            foreach ($negocio->encargados as $encargado) {
+                Notificacion::create([
+                    'user_id' => $encargado->id,
+                    'titulo' => 'NUEVA SOLICITUD ✨',
+                    'mensaje' => $mensaje,
+                    'tipo' => 'mantenimiento',
+                    'enlace' => '/encargado/mantenimiento-detalle/' . $solicitud->id,
+                    'leido' => false,
+                ]);
+            }
+        }
+
         return response()->json(['message' => 'Problema reportado exitosamente', 'data' => $solicitud], 201);
     }
 
