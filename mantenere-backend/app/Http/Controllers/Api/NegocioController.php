@@ -95,7 +95,7 @@ class NegocioController extends Controller
     // 🔍 Obtener un solo negocio (Para Editar PerfilEmpresa)
     public function show($id)
     {
-        $negocio = Negocio::find($id);
+        $negocio = Negocio::with('user')->find($id);
 
         if (!$negocio) {
             return response()->json(['message' => 'Negocio no encontrado'], 404);

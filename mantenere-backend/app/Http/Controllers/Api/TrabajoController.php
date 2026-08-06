@@ -26,7 +26,6 @@ class TrabajoController extends Controller
             }
         } elseif ($roleName === 'cliente') {
             $negociosIds = \App\Models\Negocio::where('user_id', $user->id)
-                ->orWhere('dueno', $user->name)
                 ->pluck('id');
             $query->whereIn('negocio_id', $negociosIds);
         }

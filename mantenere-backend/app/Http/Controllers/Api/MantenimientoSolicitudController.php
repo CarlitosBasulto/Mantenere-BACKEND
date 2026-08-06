@@ -34,7 +34,14 @@ class MantenimientoSolicitudController extends Controller
                 $query->where('negocio_id', $user->negocio_id);
             }
         } elseif ($roleName === 'cliente') {
-            $query->where('cliente_id', $user->id);
+            // El cliente puede ver solicitudes donde él es el cliente_id
+            // O solicitudes de negocios que le pertenecen
+            $negociosIds = \App\Models\Negocio::where('user_id', $user->id)
+                ->pluck('id');
+            $query->where(function ($q) use ($user, $negociosIds) {
+                $q->where('cliente_id', $user->id)
+                  ->orWhereIn('negocio_id', $negociosIds);
+            });
         }
 
         if ($request->has('negocio_id')) {
