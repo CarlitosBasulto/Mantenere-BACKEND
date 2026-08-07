@@ -19,9 +19,9 @@ class TrabajadorController extends Controller
 
         $query = Trabajador::with('user');
 
-        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+        if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
-        } elseif ($roleName === 'encargado') {
+        } elseif ($roleName === 'gerente-sucursal') {
             $encargadoAdminId = $user->admin_autonomo_id;
             if (!$encargadoAdminId && $user->negocio_id) {
                 $negocio = \App\Models\Negocio::find($user->negocio_id);
@@ -30,7 +30,7 @@ class TrabajadorController extends Controller
                 }
             }
             $query->where('admin_autonomo_id', $encargadoAdminId);
-        } elseif ($roleName === 'admin' || $roleName === 'root' || $roleName === 'sub-admin') {
+        } elseif ($roleName === 'admin' || $roleName === 'root') {
             // Admin principal solo ve los técnicos creados por él mismo o el sistema (creador_id nulo)
             // Cuando comparte un técnico, creador_id sigue siendo null, por lo que no lo pierde de vista.
             $query->whereNull('creador_id');
@@ -69,8 +69,15 @@ class TrabajadorController extends Controller
             'rfc' => 'nullable|string'
         ]);
 
-        // 🔥 Obtener rol trabajador dinámicamente
-        $roleTrabajador = Role::where('name', 'Trabajador')->first();
+        // 🔥 Determinar rol del técnico según quién lo crea
+        $authUser = $request->user();
+        $authRoleName = $authUser && $authUser->role ? strtolower($authUser->role->name) : '';
+
+        $isAutonomoCreator = in_array($authRoleName, ['propietario-autonomo', 'administrador-general']);
+        $tecnicoRoleName   = $isAutonomoCreator ? 'tecnico-autonomo' : 'tecnico-normal';
+
+        // 🔥 Obtener rol técnico dinámicamente
+        $roleTrabajador = Role::where('name', $tecnicoRoleName)->first();
 
         // 1️⃣ Crear usuario
         $user = User::create([
@@ -83,9 +90,8 @@ class TrabajadorController extends Controller
         ]);
 
         // Determinar admin_autonomo_id
-        $authUser = $request->user();
         $adminAutonomoId = null;
-        if ($authUser && $authUser->role && (strtolower($authUser->role->name) === 'admin-autonomo' || strtolower($authUser->role->name) === 'gerente-general')) {
+        if ($isAutonomoCreator) {
             $adminAutonomoId = $authUser->admin_autonomo_id ?? $authUser->id;
         }
 

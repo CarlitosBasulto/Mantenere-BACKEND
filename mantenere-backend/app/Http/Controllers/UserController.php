@@ -20,9 +20,9 @@ class UserController extends Controller
         $usersQuery = User::with(['role', 'trabajador'])
             ->where('id', '!=', $authUser->id)
             ->whereHas('role', function ($query) use ($myLevel) {
-                // Root y Admin (level <= 1), Admin Autonomo / Gerente (level <= 2): ven su mismo nivel y todos los inferiores (>=)
-                // Sub-Admin y más bajos (level > 2): solo ven niveles estrictamente inferiores (>)
-                if ($myLevel <= 2) {
+                // Root (0) y Admin (1): ven su mismo nivel y todos los inferiores (>=)
+                // Cliente (2) y Trabajador (3): solo ven niveles estrictamente inferiores (>)
+                if ($myLevel <= 1) {
                     $query->where('hierarchy_level', '>=', $myLevel);
                 } else {
                     $query->where('hierarchy_level', '>', $myLevel);
@@ -30,8 +30,8 @@ class UserController extends Controller
             });
 
         // Filtrar usuarios si pertenece a un ecosistema autónomo
-        $isAutonomo = $authUser->role && $authUser->role->name === 'admin-autonomo';
-        $isGerente = $authUser->role && $authUser->role->name === 'gerente-general';
+        $isAutonomo = $authUser->role && $authUser->role->name === 'propietario-autonomo';
+        $isGerente  = $authUser->role && $authUser->role->name === 'administrador-general';
 
         if ($isAutonomo || $isGerente) {
             $ecosystemId = $isAutonomo ? $authUser->id : $authUser->admin_autonomo_id;
@@ -49,7 +49,7 @@ class UserController extends Controller
                 ->orWhereHas('trabajador', function ($q3) use ($ecosystemId) {
                     $q3->where('admin_autonomo_id', $ecosystemId);
                 })
-                // Usuarios vinculados directamente (como gerente-general u otros encargados)
+                // Usuarios vinculados directamente (como administrador-general u otros gerentes)
                 ->orWhere('admin_autonomo_id', $ecosystemId);
             });
         }
@@ -131,8 +131,8 @@ class UserController extends Controller
             ], 403);
         }
 
-        // 🔥 Un gerente-general no puede modificar a un admin-autonomo aunque tengan el mismo nivel de jerarquía
-        if ($authUser->role->name === 'gerente-general' && $user->role->name === 'admin-autonomo') {
+        // 🔥 Un administrador-general no puede modificar a un propietario-autonomo aunque tengan el mismo nivel de jerarquía
+        if ($authUser->role->name === 'administrador-general' && $user->role->name === 'propietario-autonomo') {
             return response()->json([
                 'message' => 'No tienes permisos para modificar al Admin Autónomo'
             ], 403);
@@ -248,8 +248,8 @@ class UserController extends Controller
             ], 403);
         }
 
-        // 🔥 Un gerente-general no puede eliminar a un admin-autonomo aunque tengan el mismo nivel
-        if ($authUser->role->name === 'gerente-general' && $user->role->name === 'admin-autonomo') {
+        // 🔥 Un administrador-general no puede eliminar a un propietario-autonomo aunque tengan el mismo nivel
+        if ($authUser->role->name === 'administrador-general' && $user->role->name === 'propietario-autonomo') {
             return response()->json([
                 'message' => 'No tienes permisos para eliminar al Admin Autónomo'
             ], 403);

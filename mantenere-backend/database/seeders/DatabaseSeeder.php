@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,31 +19,31 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
 
-        User::updateOrCreate(
-            ['email' => 'root@mantenere.com'],
-            [
-                'name' => 'Root',
-                'password' => Hash::make('root123'),
-                'role_id' => 1, // admin
-            ]
-        );
+        $rootRole = Role::where('name', 'root')->first();
+        $adminRole = Role::where('name', 'Admin')->first();
 
-        User::updateOrCreate(
-            ['email' => 'admin@mantenere.com'],
-            [
-                'name' => 'Admin',
-                'password' => Hash::make('admin123'),
-                'role_id' => 1,
-            ]
-        );
+        if ($rootRole) {
+            User::updateOrCreate(
+                ['email' => 'root@mantenere.com'],
+                [
+                    'name' => 'Root Access',
+                    'password' => Hash::make('MantenereRoot2026!'),
+                    'role_id' => $rootRole->id,
+                    'active' => 1,
+                ]
+            );
+        }
 
-        User::updateOrCreate(
-            ['email' => 'cliente@mantenere.com'],
-            [
-                'name' => 'Cliente',
-                'password' => Hash::make('cliente123'),
-                'role_id' => 2, // cliente
-            ]
-        );
+        if ($adminRole) {
+            User::updateOrCreate(
+                ['email' => 'admin@mantenere.com'],
+                [
+                    'name' => 'Admin Base',
+                    'password' => Hash::make('AdminBase2026!'),
+                    'role_id' => $adminRole->id,
+                    'active' => 1,
+                ]
+            );
+        }
     }
 }

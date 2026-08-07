@@ -17,7 +17,7 @@ class AdminAutonomoController extends Controller
      */
     public function index(Request $request)
     {
-        $autonomoRole = \App\Models\Role::where('name', 'admin-autonomo')->first();
+        $autonomoRole = \App\Models\Role::where('name', 'propietario-autonomo')->first();
         if (!$autonomoRole) {
             return response()->json([]);
         }
@@ -149,7 +149,7 @@ class AdminAutonomoController extends Controller
         $user = $request->user();
         $adminId = $user->admin_autonomo_id ?? $user->id;
 
-        $roleGerente = \App\Models\Role::where('name', 'gerente-general')->first();
+        $roleGerente = \App\Models\Role::where('name', 'administrador-general')->first();
         if (!$roleGerente) {
             return response()->json(['gerente' => null]);
         }
@@ -180,14 +180,14 @@ class AdminAutonomoController extends Controller
         $user = $request->user();
         // Solo el admin autonomo principal puede crear su gerente general, pero si un gerente general intenta esto,
         // podríamos bloquearlo. El usuario especificó: "por el momento solo un gerente general por admin autonomo".
-        // Vamos a permitir solo a admin-autonomo asignar a su gerente.
-        if (strtolower($user->role->name) !== 'admin-autonomo') {
-            return response()->json(['message' => 'Solo el Admin Autónomo puede asignar un gerente.'], 403);
+        // Solo el propietario-autonomo puede asignar a su administrador general
+        if (strtolower($user->role->name) !== 'propietario-autonomo') {
+            return response()->json(['message' => 'Solo el Propietario Autónomo puede asignar un administrador general.'], 403);
         }
 
-        $roleGerente = \App\Models\Role::where('name', 'gerente-general')->first();
+        $roleGerente = \App\Models\Role::where('name', 'administrador-general')->first();
         if (!$roleGerente) {
-            return response()->json(['message' => 'Rol de gerente general no existe en el sistema'], 500);
+            return response()->json(['message' => 'Rol de administrador general no existe en el sistema'], 500);
         }
 
         $gerente = User::where('admin_autonomo_id', $user->id)

@@ -25,11 +25,11 @@ class MantenimientoSolicitudController extends Controller
             'reparacionTrabajo.reporte'
         ]);
 
-        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+        if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $query->whereHas('negocio', function ($q) use ($user) {
                 $q->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
             });
-        } elseif ($roleName === 'encargado') {
+        } elseif ($roleName === 'gerente-sucursal') {
             if (isset($user->negocio_id)) {
                 $query->where('negocio_id', $user->negocio_id);
             }
@@ -84,7 +84,7 @@ class MantenimientoSolicitudController extends Controller
             if ($negocio->admin_autonomo_id) {
                 $ecosistemaUsers = \App\Models\User::where('admin_autonomo_id', $negocio->admin_autonomo_id)
                     ->whereHas('role', function($query) {
-                        $query->whereIn('name', ['admin-autonomo', 'gerente-general']);
+                        $query->whereIn('name', ['propietario-autonomo', 'administrador-general']);
                     })
                     ->orWhere('id', $negocio->admin_autonomo_id)
                     ->get();

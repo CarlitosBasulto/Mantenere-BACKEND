@@ -30,29 +30,27 @@ class AuthController extends Controller
         // Normalizar el nombre del rol para el frontend
         $roleName = strtolower($user->role->name);
 
-        // Sub-Admin → mismo panel que admin, diferencia controlada por hierarchy_level
-        if ($roleName === 'sub-admin') {
-            $roleName = 'admin';
-        }
 
-        // Admin Autónomo → panel propio /autonomo
-        if ($roleName === 'admin-autonomo') {
+        // Propietario Autónomo → panel propio /autonomo
+        if ($roleName === 'propietario-autonomo') {
             $roleName = 'autonomo';
         }
 
         // Calcular el admin_autonomo_id efectivo
         $effectiveAdminAutonomoId = $user->admin_autonomo_id;
         if (!$effectiveAdminAutonomoId) {
-            if ($roleName === 'encargado' && $user->negocio_id) {
+            if ($roleName === 'gerente-sucursal' && $user->negocio_id) {
                 $negocio = \App\Models\Negocio::find($user->negocio_id);
                 if ($negocio) {
                     $effectiveAdminAutonomoId = $negocio->admin_autonomo_id;
                 }
-            } elseif ($roleName === 'tecnico') {
+            } elseif ($roleName === 'tecnico-autonomo') {
                 $trabajador = \App\Models\Trabajador::where('user_id', $user->id)->first();
                 if ($trabajador) {
                     $effectiveAdminAutonomoId = $trabajador->admin_autonomo_id;
                 }
+            } elseif ($roleName === 'administrador-general') {
+                // admin_autonomo_id ya viene en el usuario
             } elseif ($roleName === 'cliente') {
                 $negocio = \App\Models\Negocio::where('user_id', $user->id)->first();
                 if ($negocio) {

@@ -23,15 +23,15 @@ class NegocioController extends Controller
         $query = Negocio::with('areas.equipos.categoria');
 
         // Admin Autónomo o Gerente General solo ve SUS negocios
-        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+        if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
-        } elseif ($roleName === 'encargado') {
+        } elseif ($roleName === 'gerente-sucursal') {
             $query->where('id', $user->negocio_id);
-        } elseif ($roleName !== 'admin' && $roleName !== 'root' && $roleName !== 'sub-admin') {
+        } elseif ($roleName !== 'admin' && $roleName !== 'root') {
             // Clientes, técnicos etc. solo ven negocios del sistema principal
             $query->whereNull('admin_autonomo_id');
         }
-        // Admin / Root / Sub-Admin ven TODOS los negocios
+        // Admin / Root ven TODOS los negocios
 
         $negocios = $query->get();
         return response()->json($negocios);
@@ -122,7 +122,7 @@ class NegocioController extends Controller
         // Si quien crea es Admin Autónomo o Gerente General, taggear el negocio con su ID
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
-        if ($roleName === 'admin-autonomo' || $roleName === 'gerente-general') {
+        if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $data['admin_autonomo_id'] = $user->admin_autonomo_id ?? $user->id;
         }
 
@@ -248,9 +248,9 @@ class NegocioController extends Controller
         ]);
         $negocio = \App\Models\Negocio::findOrFail($id);
         
-        $roleEncargado = \App\Models\Role::where('name', 'encargado')->first();
+        $roleEncargado = \App\Models\Role::where('name', 'gerente-sucursal')->first();
         if (!$roleEncargado) {
-            return response()->json(['message' => 'Rol de encargado no existe en el sistema'], 500);
+            return response()->json(['message' => 'Rol de gerente de sucursal no existe en el sistema'], 500);
         }
         // Buscar si ya hay un encargado para esta sucursal
         $encargado = \App\Models\User::where('negocio_id', $id)
@@ -292,7 +292,7 @@ class NegocioController extends Controller
     // Método para obtener el encargado actual de la sucursal
     public function getEncargado($id)
     {
-        $roleEncargado = \App\Models\Role::where('name', 'encargado')->first();
+        $roleEncargado = \App\Models\Role::where('name', 'gerente-sucursal')->first();
         if (!$roleEncargado) {
             return response()->json(['encargado' => null]);
         }

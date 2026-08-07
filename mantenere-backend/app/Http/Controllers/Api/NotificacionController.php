@@ -82,8 +82,7 @@ class NotificacionController extends Controller
 
         $rolesToNotify = [$request->role];
         if ($request->role === 'admin') {
-            $rolesToNotify[] = 'admin-autonomo';
-            $rolesToNotify[] = 'admin_autonomo';
+            $rolesToNotify[] = 'propietario-autonomo';
         }
 
         $users = \App\Models\User::whereHas('role', function($query) use ($rolesToNotify) {
@@ -118,7 +117,7 @@ class NotificacionController extends Controller
 
         $users = \App\Models\User::where('admin_autonomo_id', $request->admin_autonomo_id)
             ->whereHas('role', function($query) {
-                $query->whereIn('name', ['admin-autonomo', 'gerente-general']);
+                $query->whereIn('name', ['propietario-autonomo', 'administrador-general']);
             })
             ->orWhere('id', $request->admin_autonomo_id)
             ->get();
