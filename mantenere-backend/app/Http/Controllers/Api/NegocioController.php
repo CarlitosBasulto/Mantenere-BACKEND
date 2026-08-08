@@ -306,4 +306,21 @@ class NegocioController extends Controller
             ] : null
         ]);
     }
+
+    // ❌ Eliminar un negocio existente (Para PerfilEmpresa DELETE)
+    public function destroy($id)
+    {
+        $negocio = Negocio::find($id);
+
+        if (!$negocio) {
+            return response()->json(['message' => 'Negocio no encontrado'], 404);
+        }
+
+        $negocio->delete();
+
+        return response()->json([
+            'message' => 'Negocio eliminado correctamente'
+        ]);
+    }
 }
+

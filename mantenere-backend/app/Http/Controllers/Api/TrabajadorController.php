@@ -66,15 +66,28 @@ class TrabajadorController extends Controller
             'telefono' => 'nullable|string',
             'fecha_nacimiento' => 'nullable|date',
             'direccion' => 'nullable|string',
-            'rfc' => 'nullable|string'
+            'rfc' => 'nullable|string',
+            'tipo' => 'nullable|string'
         ]);
 
-        // 🔥 Determinar rol del técnico según quién lo crea
+        // 🔥 Determinar rol del técnico según la selección o quién lo crea
         $authUser = $request->user();
         $authRoleName = $authUser && $authUser->role ? strtolower($authUser->role->name) : '';
 
-        $isAutonomoCreator = in_array($authRoleName, ['propietario-autonomo', 'administrador-general']);
-        $tecnicoRoleName   = $isAutonomoCreator ? 'tecnico-autonomo' : 'tecnico-normal';
+        $tecnicoRoleName = null;
+        if ($request->has('tipo') && !empty($request->tipo)) {
+            $tipoStr = strtolower($request->tipo);
+            if ($tipoStr === 'interno') {
+                $tecnicoRoleName = 'tecnico-normal';
+            } elseif ($tipoStr === 'externo') {
+                $tecnicoRoleName = 'tecnico-autonomo';
+            }
+        }
+
+        if (!$tecnicoRoleName) {
+            $isAutonomoCreator = in_array($authRoleName, ['propietario-autonomo', 'administrador-general']);
+            $tecnicoRoleName   = $isAutonomoCreator ? 'tecnico-autonomo' : 'tecnico-normal';
+        }
 
         // 🔥 Obtener rol técnico dinámicamente
         $roleTrabajador = Role::where('name', $tecnicoRoleName)->first();

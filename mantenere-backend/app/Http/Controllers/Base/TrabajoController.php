@@ -25,7 +25,7 @@ class TrabajoController extends Controller
         // Cliente solo ve trabajos de sus negocios
         if ($roleName === 'cliente') {
             $negociosIds = \App\Models\Negocio::where('user_id', $user->id)
-                ->orWhere('dueno', $user->name)
+                ->orWhere('encargado', $user->name)
                 ->pluck('id');
             $query->whereIn('negocio_id', $negociosIds);
         }

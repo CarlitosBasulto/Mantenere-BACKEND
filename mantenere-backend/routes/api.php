@@ -16,6 +16,9 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\SolicitudProveedorController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminAutonomoController;
+use App\Http\Controllers\Api\NegocioController;
+use App\Http\Controllers\Api\TrabajoController;
+use App\Http\Controllers\Api\TrabajadorController;
 
 // ── HEALTH CHECK ─────────────────────────────────────────────────────────────
 Route::get('/ping', fn() => response()->json(['pong' => true]));
@@ -66,6 +69,7 @@ Route::middleware(['auth:sanctum', 'base.role'])->prefix('base')->group(function
     Route::post  ('negocios',               [\App\Http\Controllers\Base\NegocioController::class, 'store']);
     Route::get   ('negocios/{id}',          [\App\Http\Controllers\Base\NegocioController::class, 'show']);
     Route::put   ('negocios/{id}',          [\App\Http\Controllers\Base\NegocioController::class, 'update']);
+    Route::delete('negocios/{id}',          [\App\Http\Controllers\Base\NegocioController::class, 'destroy']);
     Route::put   ('equipos/{id}',           [\App\Http\Controllers\Base\NegocioController::class, 'updateEquipo']);
     Route::get   ('equipos/{id}/historial', [\App\Http\Controllers\Base\NegocioController::class, 'getEquipoHistorial']);
 
@@ -121,6 +125,7 @@ Route::middleware(['auth:sanctum', 'autonomo.role'])->prefix('autonomo')->group(
     Route::post ('negocios',                          [\App\Http\Controllers\Autonomo\NegocioController::class, 'store']);
     Route::get  ('negocios/{id}',                     [\App\Http\Controllers\Autonomo\NegocioController::class, 'show']);
     Route::put  ('negocios/{id}',                     [\App\Http\Controllers\Autonomo\NegocioController::class, 'update']);
+    Route::delete('negocios/{id}',                    [\App\Http\Controllers\Autonomo\NegocioController::class, 'destroy']);
     Route::post ('negocios/{id}/gerente-sucursal',    [\App\Http\Controllers\Autonomo\NegocioController::class, 'asignarGerenteSucursal']);
     Route::get  ('negocios/{id}/gerente-sucursal',    [\App\Http\Controllers\Autonomo\NegocioController::class, 'getGerenteSucursal']);
 
@@ -186,6 +191,40 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 🖼️ Imágenes
     Route::post('upload-imagen', [ImageController::class, 'upload']);
+
+    // 🏢 Negocios generales
+    Route::get   ('negocios',               [NegocioController::class, 'index']);
+    Route::post  ('negocios',               [NegocioController::class, 'store']);
+    Route::get   ('negocios/{id}',          [NegocioController::class, 'show']);
+    Route::put   ('negocios/{id}',          [NegocioController::class, 'update']);
+    Route::delete('negocios/{id}',          [NegocioController::class, 'destroy']);
+    Route::post  ('negocios/{id}/encargado', [NegocioController::class, 'asignarEncargado']);
+    Route::get   ('negocios/{id}/encargado', [NegocioController::class, 'getEncargado']);
+    Route::put   ('equipos/{id}',           [NegocioController::class, 'updateEquipo']);
+    Route::get   ('equipos/{id}/historial', [NegocioController::class, 'getEquipoHistorial']);
+
+    // 🛠️ Trabajos generales
+    Route::get   ('trabajos',              [TrabajoController::class, 'index']);
+    Route::post  ('trabajos',              [TrabajoController::class, 'store']);
+    Route::get   ('trabajos/{id}',         [TrabajoController::class, 'show']);
+    Route::put   ('trabajos/{id}',         [TrabajoController::class, 'update']);
+    Route::put   ('trabajos/{id}/asignar', [TrabajoController::class, 'asignarTrabajador']);
+    Route::put   ('trabajos/{id}/estado',  [TrabajoController::class, 'cambiarEstado']);
+    Route::delete('trabajos/{id}',         [TrabajoController::class, 'destroy']);
+
+    // 👷 Trabajadores generales
+    Route::get   ('trabajadores',             [TrabajadorController::class, 'index']);
+    Route::get   ('trabajadores/{id}',        [TrabajadorController::class, 'show']);
+    Route::post  ('trabajadores',             [TrabajadorController::class, 'store']);
+    Route::put   ('trabajadores/{id}',        [TrabajadorController::class, 'update']);
+    Route::patch ('trabajadores/{id}/estado', [TrabajadorController::class, 'toggleEstado']);
+
+    // 🔧 Solicitudes de mantenimiento generales
+    Route::get  ('mantenimiento-solicitudes',                         [MantenimientoSolicitudController::class, 'index']);
+    Route::post ('mantenimiento-solicitudes',                         [MantenimientoSolicitudController::class, 'store']);
+    Route::get  ('mantenimiento-solicitudes/{id}',                    [MantenimientoSolicitudController::class, 'show']);
+    Route::post ('mantenimiento-solicitudes/{id}/asignar-visita',     [MantenimientoSolicitudController::class, 'asignarVisita']);
+    Route::post ('mantenimiento-solicitudes/{id}/asignar-reparacion', [MantenimientoSolicitudController::class, 'asignarReparacion']);
 });
 
 // Servir archivos de storage local

@@ -164,4 +164,16 @@ class NegocioController extends Controller
             }
         }
     }
+
+    public function destroy($id)
+    {
+        $negocio = Negocio::whereNull('admin_autonomo_id')->find($id);
+        if (!$negocio) {
+            return response()->json(['message' => 'Negocio no encontrado'], 404);
+        }
+
+        $negocio->delete();
+        return response()->json(['message' => 'Negocio eliminado']);
+    }
 }
+

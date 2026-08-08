@@ -81,7 +81,7 @@ class NotificacionController extends Controller
         ]);
 
         $rolesToNotify = [$request->role];
-        if ($request->role === 'admin') {
+        if (strtolower($request->role) === 'admin') {
             $rolesToNotify[] = 'propietario-autonomo';
         }
 

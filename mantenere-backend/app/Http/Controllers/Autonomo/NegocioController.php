@@ -166,8 +166,19 @@ class NegocioController extends Controller
                 $equipo = is_numeric($eqInput['id'] ?? null) ? $area->equipos()->find($eqInput['id']) : new \App\Models\LevantamientoEquipo();
                 if (!$equipo && is_numeric($eqInput['id'] ?? null)) continue;
                 $equipo->fill(['nombre' => $eqInput['nombre'], 'marca' => $eqInput['marca'], 'modelo' => $eqInput['modelo'], 'serie' => $eqInput['serie'] ?? null, 'anioFabricacion' => $eqInput['anioFabricacion'] ?? null, 'anioUso' => $eqInput['anioUso'] ?? null, 'foto' => $eqInput['foto'] ?? null, 'fotoPlaca' => $eqInput['fotoPlaca'] ?? null, 'categoria_id' => $eqInput['categoria_id'] ?? null, 'subAreaId' => $eqInput['subAreaId'] ?? null, 'nombreSubArea' => $eqInput['nombreSubArea'] ?? null, 'subCategoria' => $eqInput['subCategoria'] ?? null]);
-                $area->equipos()->save($equipo);
             }
         }
     }
+
+    public function destroy($id)
+    {
+        $negocio = Negocio::whereNotNull('admin_autonomo_id')->find($id);
+        if (!$negocio) {
+            return response()->json(['message' => 'Negocio no encontrado'], 404);
+        }
+
+        $negocio->delete();
+        return response()->json(['message' => 'Negocio eliminado']);
+    }
 }
+
