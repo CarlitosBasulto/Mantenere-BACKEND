@@ -42,6 +42,9 @@ class ChatController extends Controller
         $chat->load('sender:id,name,role_id');
         $chat->sender->load('role:id,name');
 
+        // Transmitir mensaje por WebSockets
+        broadcast(new \App\Events\ChatMessageSent($chat));
+
         // Notificar a las otras partes involucradas
         $trabajo = \App\Models\Trabajo::with('negocio')->findOrFail($trabajoId);
         $senderId = $request->user()->id;
@@ -68,13 +71,15 @@ class ChatController extends Controller
 
 
         foreach ($usersToNotify as $uid) {
-            \App\Models\Notificacion::create([
+            $notif = \App\Models\Notificacion::create([
                 'user_id' => $uid,
                 'titulo' => '💬 Nuevo mensaje en el chat',
                 'mensaje' => 'Nuevo mensaje de ' . $request->user()->name . ' en la solicitud #' . $trabajoId,
                 'enlace' => '/menu/trabajo-detalle/' . $trabajoId . '?tab=cotizacion',
                 'leido' => false
             ]);
+
+            broadcast(new \App\Events\NotificationSent($notif));
         }
 
         return response()->json($chat);
@@ -108,6 +113,8 @@ class ChatController extends Controller
 
         $chat->load('sender:id,name,role_id');
         $chat->sender->load('role:id,name');
+
+        broadcast(new \App\Events\ChatMessageSent($chat));
 
         return response()->json([
             'message' => 'Acción registrada con éxito',

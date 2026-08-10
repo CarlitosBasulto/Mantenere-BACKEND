@@ -24,10 +24,15 @@ class CotizacionController extends Controller
     // ➕ 2. Crear una NUEVA cotización (permite múltiples por trabajo)
     public function store(Request $request)
     {
+        if ($request->has('monto') && is_string($request->monto)) {
+            $montoLimpio = preg_replace('/[^\d.]/', '', str_replace(',', '', $request->monto));
+            $request->merge(['monto' => $montoLimpio]);
+        }
+
         $request->validate([
             'trabajo_id' => 'required|exists:trabajos,id',
             'monto'      => 'required|numeric',
-            'archivo'    => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'archivo'    => 'nullable|file|max:10240',
         ]);
 
         $pathArchivo = null;
@@ -81,7 +86,7 @@ class CotizacionController extends Controller
 
         $request->validate([
             'monto'   => 'sometimes|numeric',
-            'archivo' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'archivo' => 'nullable|file|max:10240',
         ]);
 
         $pathArchivo = $cotizacion->archivo;

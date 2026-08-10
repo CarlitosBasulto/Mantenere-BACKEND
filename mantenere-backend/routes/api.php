@@ -33,6 +33,7 @@ Route::middleware('auth:sanctum')->post('/auth/change-mandatory-password', [Auth
 
 // ── USUARIOS (compartido, jerarquía numérica) ─────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
+    \Illuminate\Support\Facades\Broadcast::routes();
     Route::get('/users',        [UserController::class, 'index']);
     Route::get('/users/{user}', [UserController::class, 'show']);
 });

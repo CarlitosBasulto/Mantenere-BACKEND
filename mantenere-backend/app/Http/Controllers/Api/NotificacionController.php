@@ -5,17 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Notificacion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class NotificacionController extends Controller
 {
     // 🔔 1. Obtener todas las notificaciones de un usuario
     public function indexByUsuario($user_id)
     {
+
+        Log::info("Ingresó el usuario correctamente ID: " . $user_id);
         $notificaciones = Notificacion::where('user_id', $user_id)
             ->orderBy('created_at', 'desc')
             ->limit(30) // Limitamos a las últimas 30 por rendimiento
             ->get();
-
+            
         return response()->json($notificaciones);
     }
 
@@ -68,24 +71,31 @@ class NotificacionController extends Controller
     }
 
     /**
-     * 📣 5. Notificar a todos los usuarios de un ROL específico (p.ej. 'admin')
-     * Útil para notificar a todos los jefes cuando un técnico termina algo.
+     * 📣 5. Notificar a todos los usuarios de un ROL específico (p.ej. 'admin', 'tecnico', 'cliente')
+     * Soporta diferentes ecosistemas y variantes de nombres de rol (Admin, tecnico-normal, etc.)
      */
     public function notifyByRole(Request $request)
     {
         $request->validate([
-            'role' => 'required|string|exists:roles,name',
+            'role' => 'required|string',
             'titulo' => 'required|string',
             'mensaje' => 'required|string',
             'enlace' => 'nullable|string',
         ]);
 
-        $rolesToNotify = [$request->role];
-        if (strtolower($request->role) === 'admin') {
-            $rolesToNotify[] = 'propietario-autonomo';
+        $roleInput = strtolower($request->role);
+        
+        if ($roleInput === 'admin') {
+            $rolesToNotify = ['Admin', 'admin', 'propietario-autonomo', 'administrador-general'];
+        } elseif ($roleInput === 'cliente') {
+            $rolesToNotify = ['Cliente', 'cliente', 'gerente-sucursal'];
+        } elseif ($roleInput === 'tecnico') {
+            $rolesToNotify = ['tecnico-normal', 'tecnico-autonomo', 'tecnico', 'Tecnico'];
+        } else {
+            $rolesToNotify = [$request->role, ucfirst($roleInput), strtolower($request->role)];
         }
 
-        $users = \App\Models\User::whereHas('role', function($query) use ($rolesToNotify) {
+        $users = \App\Models\User::whereHas('role', function ($query) use ($rolesToNotify) {
             $query->whereIn('name', $rolesToNotify);
         })->get();
 
@@ -116,7 +126,7 @@ class NotificacionController extends Controller
         ]);
 
         $users = \App\Models\User::where('admin_autonomo_id', $request->admin_autonomo_id)
-            ->whereHas('role', function($query) {
+            ->whereHas('role', function ($query) {
                 $query->whereIn('name', ['propietario-autonomo', 'administrador-general']);
             })
             ->orWhere('id', $request->admin_autonomo_id)

@@ -77,13 +77,35 @@ class AdminAutonomoController extends Controller
     }
 
     /**
-     * Negocios del Admin Autónomo
+     * Negocios del Admin Autónomo (Optimizado para tarjetas de lista)
      */
     public function negocios($id)
     {
-        $negocios = Negocio::with('areas.equipos')
+        $negocios = Negocio::select([
+                'id',
+                'admin_autonomo_id',
+                'nombre',
+                'tipo',
+                'encargado',
+                'user_id',
+                'nombrePlaza',
+                'calle',
+                'numero',
+                'colonia',
+                'calleAv',
+                'manzana',
+                'lote',
+                'ciudad',
+                'estado',
+                'cp',
+                'imagenPerfil',
+                'imagen_portada',
+                'estado_aprobacion',
+                'created_at'
+            ])
             ->where('admin_autonomo_id', $id)
             ->get();
+
         return response()->json($negocios);
     }
 

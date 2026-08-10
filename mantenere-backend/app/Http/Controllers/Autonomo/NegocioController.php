@@ -29,7 +29,28 @@ class NegocioController extends Controller
         $user     = $request->user();
         $roleName = strtolower($user->role->name);
 
-        $query = Negocio::with('areas.equipos.categoria')->whereNotNull('admin_autonomo_id');
+        $query = Negocio::select([
+            'id',
+            'admin_autonomo_id',
+            'nombre',
+            'tipo',
+            'encargado',
+            'user_id',
+            'nombrePlaza',
+            'calle',
+            'numero',
+            'colonia',
+            'calleAv',
+            'manzana',
+            'lote',
+            'ciudad',
+            'estado',
+            'cp',
+            'imagenPerfil',
+            'imagen_portada',
+            'estado_aprobacion',
+            'created_at'
+        ])->whereNotNull('admin_autonomo_id');
 
         if (in_array($roleName, ['root', 'admin'])) {
             // Sin filtro: supervisan todo
@@ -45,7 +66,7 @@ class NegocioController extends Controller
 
     public function show($id)
     {
-        $negocio = Negocio::whereNotNull('admin_autonomo_id')->find($id);
+        $negocio = Negocio::whereNotNull('admin_autonomo_id')->with('areas.equipos.categoria')->find($id);
         if (!$negocio) {
             return response()->json(['message' => 'Negocio no encontrado'], 404);
         }

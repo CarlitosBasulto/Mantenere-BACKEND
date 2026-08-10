@@ -20,7 +20,28 @@ class NegocioController extends Controller
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
 
-        $query = Negocio::with('areas.equipos.categoria');
+        $query = Negocio::select([
+            'id',
+            'admin_autonomo_id',
+            'nombre',
+            'tipo',
+            'encargado',
+            'user_id',
+            'nombrePlaza',
+            'calle',
+            'numero',
+            'colonia',
+            'calleAv',
+            'manzana',
+            'lote',
+            'ciudad',
+            'estado',
+            'cp',
+            'imagenPerfil',
+            'imagen_portada',
+            'estado_aprobacion',
+            'created_at'
+        ]);
 
         // Admin Autónomo o Gerente General solo ve SUS negocios
         if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
