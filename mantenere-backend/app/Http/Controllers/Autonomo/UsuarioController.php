@@ -1,42 +1,60 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Autonomo;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class UserController extends Controller
+class UsuarioController extends Controller
 {
     /**
-     * Listado de usuarios según jerarquía
+     * Listado de usuarios del ecosistema autónomo
      */
     public function index(Request $request)
     {
         $authUser = $request->user();
         $myLevel  = $authUser->role->hierarchy_level;
 
+        // Validar que el usuario que consulta pertenece al ecosistema autónomo
+        if ($myLevel < 4) {
+            return response()->json(['message' => 'No autorizado para ver usuarios autónomos'], 403);
+        }
+
         $usersQuery = User::with(['role', 'trabajador'])
             ->where('id', '!=', $authUser->id)
             ->whereHas('role', function ($query) use ($myLevel) {
-                // Root (0) y Admin (1): ven su mismo nivel y todos los inferiores (>=)
-                // Cliente (2) y Trabajador (3): solo ven niveles estrictamente inferiores (>)
-                if ($myLevel <= 1) {
-                    $query->where('hierarchy_level', '>=', $myLevel);
-                } else {
-                    $query->where('hierarchy_level', '>', $myLevel);
-                }
-
-                if ($myLevel <= 3) {
-                    $query->where('hierarchy_level', '<=', 3);
-                }
+                // Solo pueden ver niveles estrictamente inferiores (>) o iguales si es necesario, 
+                // pero por regla general, gerentes y admins ven hacia abajo.
+                $query->where('hierarchy_level', '>=', $myLevel)
+                      ->where('hierarchy_level', '>=', 4); // Asegurarse de que no vean roles base
             });
 
+        $ecosystemId = $authUser->role->name === 'propietario-autonomo' 
+            ? $authUser->id 
+            : $authUser->admin_autonomo_id;
+
+        $usersQuery->where(function ($q) use ($ecosystemId) {
+            // Usuarios que son dueños de sus negocios
+            $q->whereHas('negocios', function ($q2) use ($ecosystemId) {
+                $q2->where('admin_autonomo_id', $ecosystemId);
+            })
+            // Usuarios que son encargados de sus negocios
+            ->orWhereHas('negocioEncargado', function ($q4) use ($ecosystemId) {
+                $q4->where('admin_autonomo_id', $ecosystemId);
+            })
+            // Usuarios que son sus trabajadores
+            ->orWhereHas('trabajador', function ($q3) use ($ecosystemId) {
+                $q3->where('admin_autonomo_id', $ecosystemId);
+            })
+            // Usuarios vinculados directamente
+            ->orWhere('admin_autonomo_id', $ecosystemId);
+        });
 
         $users = $usersQuery->get()
             ->map(function ($user) {
-                // Si el usuario no tiene avatar directo, lo toma del trabajador si existe
                 if (!$user->avatar && $user->trabajador) {
                     $user->avatar = $user->trabajador->avatar;
                 }
@@ -46,17 +64,11 @@ class UserController extends Controller
         return response()->json($users);
     }
 
-    /**
-     * Mostrar usuario específico
-     */
     public function show(Request $request, User $user)
     {
         return response()->json($user->load('role'));
     }
 
-    /**
-     * Crear usuario con control jerárquico
-     */
     public function store(Request $request)
     {
         $authUser = $request->user();
@@ -76,16 +88,19 @@ class UserController extends Controller
 
         $targetRole = Role::find($request->role_id);
 
-        if (!$targetRole) {
-            return response()->json(['message' => 'Rol inválido'], 422);
+        if (!$targetRole || $targetRole->hierarchy_level < 4) {
+            return response()->json(['message' => 'Rol inválido para el ecosistema autónomo'], 422);
         }
 
-        // 🔥 Regla jerárquica
         if ($targetRole->hierarchy_level <= $authUser->role->hierarchy_level) {
             return response()->json([
                 'message' => 'No puedes crear un usuario con igual o mayor jerarquía'
             ], 403);
         }
+
+        $ecosystemId = $authUser->role->name === 'propietario-autonomo' 
+            ? $authUser->id 
+            : $authUser->admin_autonomo_id;
 
         $user = User::create([
             'name' => $request->name,
@@ -94,6 +109,7 @@ class UserController extends Controller
             'role_id' => $request->role_id,
             'rfc' => $request->rfc,
             'razon_social' => $request->razon_social,
+            'admin_autonomo_id' => $ecosystemId,
             'active' => 1
         ]);
 
@@ -108,14 +124,17 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // 🔥 No puedes modificar a alguien superior
         if ($user->role->hierarchy_level < $authUser->role->hierarchy_level) {
             return response()->json([
                 'message' => 'No puedes modificar un usuario con mayor jerarquía'
             ], 403);
         }
 
-
+        if ($authUser->role->name === 'administrador-general' && $user->role->name === 'propietario-autonomo') {
+            return response()->json([
+                'message' => 'No tienes permisos para modificar al Admin Autónomo'
+            ], 403);
+        }
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -130,74 +149,31 @@ class UserController extends Controller
             'avatar' => 'nullable|string',
         ]);
 
-        // 🔥 Si intenta cambiar el rol
         if ($request->has('role_id')) {
-
             $newRole = \App\Models\Role::find($request->role_id);
-
-            if (!$newRole) {
-                return response()->json(['message' => 'Rol inválido'], 422);
+            if (!$newRole || $newRole->hierarchy_level < 4) {
+                return response()->json(['message' => 'Rol inválido para el ecosistema autónomo'], 422);
             }
-
-            // No puedes asignar rol igual o superior al tuyo
             if ($newRole->hierarchy_level <= $authUser->role->hierarchy_level) {
                 return response()->json([
                     'message' => 'No puedes asignar un rol igual o superior al tuyo'
                 ], 403);
             }
-
-            // No puedes cambiar tu propio rol
             if ($authUser->id === $user->id) {
                 return response()->json([
                     'message' => 'No puedes cambiar tu propio rol'
                 ], 403);
             }
-        }
-
-        // Actualizaciones permitidas
-        if ($request->has('name')) {
-            $user->name = $request->name;
-        }
-
-        if ($request->has('email')) {
-            $user->email = $request->email;
-        }
-
-        if ($request->has('password')) {
-            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
-            $user->must_change_password = true;
-        }
-
-        if ($request->has('role_id')) {
             $user->role_id = $request->role_id;
         }
 
-        if ($request->has('active')) {
-            $user->active = $request->active;
-        }
+        $user->fill($request->only([
+            'name', 'email', 'active', 'telefono', 'rfc', 'razon_social', 'direccion_fiscal', 'avatar', 'cv_url'
+        ]));
 
-        if ($request->has('telefono')) {
-            $user->telefono = $request->telefono;
-        }
-
-        if ($request->has('rfc')) {
-            $user->rfc = $request->rfc;
-        }
-
-        if ($request->has('razon_social')) {
-            $user->razon_social = $request->razon_social;
-        }
-
-        if ($request->has('direccion_fiscal')) {
-            $user->direccion_fiscal = $request->direccion_fiscal;
-        }
-
-        if ($request->has('avatar')) {
-            $user->avatar = $request->avatar;
-        }
-
-        if ($request->has('cv_url')) {
-            $user->cv_url = $request->cv_url;
+        if ($request->has('password')) {
+            $user->password = Hash::make($request->password);
+            $user->must_change_password = true;
         }
 
         $user->save();
@@ -213,23 +189,24 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // 🔥 No puedes eliminarte a ti mismo
         if ($authUser->id === $user->id) {
             return response()->json([
                 'message' => 'No puedes eliminar tu propio usuario'
             ], 403);
         }
 
-        // 🔥 No puedes eliminar alguien superior
         if ($user->role->hierarchy_level < $authUser->role->hierarchy_level) {
             return response()->json([
                 'message' => 'No puedes eliminar un usuario con mayor jerarquía'
             ], 403);
         }
 
+        if ($authUser->role->name === 'administrador-general' && $user->role->name === 'propietario-autonomo') {
+            return response()->json([
+                'message' => 'No tienes permisos para eliminar al Admin Autónomo'
+            ], 403);
+        }
 
-
-        // 🔥 Eliminación lógica
         $user->active = 0;
         $user->save();
 

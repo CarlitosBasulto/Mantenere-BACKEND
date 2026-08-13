@@ -20,6 +20,9 @@ class NegocioController extends Controller
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
 
+        $myLevel = $user && $user->role ? $user->role->hierarchy_level : 0;
+
+
         $query = Negocio::select([
             'id',
             'admin_autonomo_id',
@@ -143,6 +146,9 @@ class NegocioController extends Controller
         // Si quien crea es Admin Autónomo o Gerente General, taggear el negocio con su ID
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
+
+        $myLevel = $user && $user->role ? $user->role->hierarchy_level : 0;
+
         if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $data['admin_autonomo_id'] = $user->admin_autonomo_id ?? $user->id;
         }
