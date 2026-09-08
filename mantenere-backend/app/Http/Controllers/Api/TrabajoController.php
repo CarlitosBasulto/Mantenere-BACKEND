@@ -146,9 +146,10 @@ class TrabajoController extends Controller
         $trabajo = Trabajo::findOrFail($id);
         $trabajo->trabajador_id = $request->trabajador_id;
 
-        // Opcional: Si se asigna alguien, pasarlo a "En proceso"
-        if ($request->trabajador_id && $trabajo->estado === 'Pendiente') {
-            $trabajo->estado = 'En proceso';
+        if ($request->trabajador_id) {
+            $trabajo->motivo_rechazo = null;
+            $trabajo->rechazado_por_nombre = null;
+            $trabajo->estado = 'Solicitud';
         }
 
         $trabajo->save();
@@ -194,6 +195,8 @@ class TrabajoController extends Controller
             'hora_llegada' => 'nullable|string',
             'latitud_llegada' => 'nullable|string',
             'longitud_llegada' => 'nullable|string',
+            'motivo_rechazo' => 'nullable|string',
+            'rechazado_por_nombre' => 'nullable|string',
         ]);
 
         $trabajo = Trabajo::findOrFail($id);
@@ -213,6 +216,14 @@ class TrabajoController extends Controller
 
         if ($request->has('longitud_llegada')) {
             $trabajo->longitud_llegada = $request->longitud_llegada;
+        }
+
+        if ($request->has('motivo_rechazo')) {
+            $trabajo->motivo_rechazo = $request->motivo_rechazo;
+        }
+
+        if ($request->has('rechazado_por_nombre')) {
+            $trabajo->rechazado_por_nombre = $request->rechazado_por_nombre;
         }
         
         $trabajo->save();

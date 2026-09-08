@@ -201,5 +201,39 @@ class NegocioController extends Controller
         $negocio->delete();
         return response()->json(['message' => 'Negocio eliminado']);
     }
-}
 
+    /**
+     * Mini-tablero: conteos de trabajos por estado para una sucursal.
+     * GET /api/autonomo/negocios/{id}/resumen
+     */
+    public function resumen($id)
+    {
+        $negocio = Negocio::findOrFail($id);
+
+        $today = now()->toDateString();
+
+        $counts = Trabajo::selectRaw("
+            COUNT(CASE WHEN (prioridad = 'Alta' OR tipo = 'SOS')
+                            AND estado NOT IN ('Finalizado','Completado')
+                       THEN 1 END) as sos,
+            COUNT(CASE WHEN estado IN ('Solicitud','Pendiente')
+                            AND NOT (prioridad = 'Alta' OR tipo = 'SOS')
+                       THEN 1 END) as solicitud,
+            COUNT(CASE WHEN estado = 'En Proceso'
+                            AND NOT (prioridad = 'Alta' OR tipo = 'SOS')
+                       THEN 1 END) as en_proceso,
+            COUNT(CASE WHEN estado IN ('Finalizado','Completado')
+                            AND DATE(updated_at) = ?
+                       THEN 1 END) as finalizado_hoy
+        ", [$today])
+            ->where('negocio_id', $negocio->id)
+            ->first();
+
+        return response()->json([
+            'sos'            => (int) $counts->sos,
+            'solicitud'      => (int) $counts->solicitud,
+            'en_proceso'     => (int) $counts->en_proceso,
+            'finalizado_hoy' => (int) $counts->finalizado_hoy,
+        ]);
+    }
+}

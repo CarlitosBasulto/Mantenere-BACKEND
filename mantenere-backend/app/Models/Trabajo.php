@@ -51,3 +51,4 @@ class Trabajo extends Model
         return $this->hasOne(MantenimientoSolicitud::class, 'reparacion_trabajo_id');
     }
 }
+

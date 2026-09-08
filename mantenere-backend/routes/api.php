@@ -129,6 +129,7 @@ Route::middleware(['auth:sanctum', 'autonomo.role'])->prefix('autonomo')->group(
     Route::delete('negocios/{id}',                    [\App\Http\Controllers\Autonomo\NegocioController::class, 'destroy']);
     Route::post ('negocios/{id}/gerente-sucursal',    [\App\Http\Controllers\Autonomo\NegocioController::class, 'asignarGerenteSucursal']);
     Route::get  ('negocios/{id}/gerente-sucursal',    [\App\Http\Controllers\Autonomo\NegocioController::class, 'getGerenteSucursal']);
+    Route::get  ('negocios/{id}/resumen',             [\App\Http\Controllers\Autonomo\NegocioController::class, 'resumen']);
 
     // 📊 Dashboard y gerente del propietario autónomo
     Route::get ('dashboard', [AdminAutonomoController::class, 'dashboard']);

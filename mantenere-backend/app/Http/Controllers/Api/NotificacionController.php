@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Notificacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Events\NotificationSent;
 
 class NotificacionController extends Controller
 {
@@ -39,6 +40,12 @@ class NotificacionController extends Controller
             'enlace' => $request->enlace,
             'leido' => false
         ]);
+
+        try {
+            broadcast(new NotificationSent($notificacion));
+        } catch (\Throwable $e) {
+            Log::warning("Error broadcasting notification: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Notificación creada exitosamente',
@@ -101,13 +108,19 @@ class NotificacionController extends Controller
 
         $notifications = [];
         foreach ($users as $user) {
-            $notifications[] = Notificacion::create([
+            $notif = Notificacion::create([
                 'user_id' => $user->id,
                 'titulo' => $request->titulo,
                 'mensaje' => $request->mensaje,
                 'enlace' => $request->enlace,
                 'leido' => false
             ]);
+            try {
+                broadcast(new NotificationSent($notif));
+            } catch (\Throwable $e) {
+                Log::warning("Error broadcasting notification: " . $e->getMessage());
+            }
+            $notifications[] = $notif;
         }
 
         return response()->json([
@@ -134,13 +147,19 @@ class NotificacionController extends Controller
 
         $notifications = [];
         foreach ($users as $user) {
-            $notifications[] = Notificacion::create([
+            $notif = Notificacion::create([
                 'user_id' => $user->id,
                 'titulo' => $request->titulo,
                 'mensaje' => $request->mensaje,
                 'enlace' => $request->enlace,
                 'leido' => false
             ]);
+            try {
+                broadcast(new NotificationSent($notif));
+            } catch (\Throwable $e) {
+                Log::warning("Error broadcasting notification: " . $e->getMessage());
+            }
+            $notifications[] = $notif;
         }
 
         return response()->json([
@@ -162,13 +181,19 @@ class NotificacionController extends Controller
 
         $notifications = [];
         foreach ($users as $user) {
-            $notifications[] = Notificacion::create([
+            $notif = Notificacion::create([
                 'user_id' => $user->id,
                 'titulo' => $request->titulo,
                 'mensaje' => $request->mensaje,
                 'enlace' => $request->enlace,
                 'leido' => false
             ]);
+            try {
+                broadcast(new NotificationSent($notif));
+            } catch (\Throwable $e) {
+                Log::warning("Error broadcasting notification: " . $e->getMessage());
+            }
+            $notifications[] = $notif;
         }
 
         return response()->json([

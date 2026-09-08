@@ -16,7 +16,7 @@ class Negocio extends Model
         'estado', 'ciudad', 'calle', 'numero', 'colonia', 'cp',
         'referencia', 'manzana', 'lote', 'calleAv',
         'gerente', 'telefonoGerente', 'subgerente', 'telefonoSubgerente',
-        'telefono', 'correo', 'imagenPerfil', 'estado_aprobacion', 'user_id', 'admin_autonomo_id', 'imagen_portada'
+        'telefono', 'correo', 'imagenPerfil', 'estado_aprobacion', 'user_id', 'admin_autonomo_id', 'imagen_portada', 'latitud', 'longitud'
     ];
 
     /**
@@ -37,3 +37,4 @@ class Negocio extends Model
         return $this->hasMany(User::class, 'negocio_id');
     }
 }
+

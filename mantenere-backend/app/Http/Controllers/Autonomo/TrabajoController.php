@@ -33,7 +33,7 @@ class TrabajoController extends Controller
         $user     = $request->user();
         $roleName = strtolower($user->role->name);
 
-        $query = Trabajo::with(['trabajador', 'negocio', 'reporte'])
+        $query = Trabajo::with(['trabajador', 'negocio.encargados', 'reporte'])
             ->whereNotNull('admin_autonomo_id')
             ->orderBy('created_at', 'desc');
 
@@ -151,6 +151,8 @@ class TrabajoController extends Controller
             'visitado'         => 'sometimes|boolean',
             'trabajador_id'    => 'sometimes|nullable|exists:trabajadores,id',
             'fecha_programada' => 'sometimes|nullable|date',
+            'fechaAsignada' => 'sometimes|nullable|date',
+            'horaAsignada' => 'sometimes|nullable|string',
         ]);
         $trabajo->update($data);
         return response()->json(['message' => 'Trabajo actualizado.', 'trabajo' => $trabajo->load(['trabajador', 'negocio'])]);
@@ -158,13 +160,23 @@ class TrabajoController extends Controller
 
     public function cambiarEstado(Request $request, $id)
     {
-        $request->validate(['estado' => 'required|string', 'visitado' => 'nullable|boolean', 'hora_llegada' => 'nullable|string', 'latitud_llegada' => 'nullable|string', 'longitud_llegada' => 'nullable|string']);
+        $request->validate([
+            'estado'            => 'required|string',
+            'visitado'          => 'nullable|boolean',
+            'hora_llegada'      => 'nullable|string',
+            'latitud_llegada'   => 'nullable|string',
+            'longitud_llegada'  => 'nullable|string',
+            'motivo_rechazo'       => 'nullable|string',
+            'rechazado_por_nombre' => 'nullable|string',
+        ]);
         $trabajo = Trabajo::whereNotNull('admin_autonomo_id')->findOrFail($id);
         $trabajo->estado = $request->estado;
         if ($request->has('visitado'))         $trabajo->visitado         = $request->visitado;
         if ($request->has('hora_llegada'))     $trabajo->hora_llegada     = $request->hora_llegada;
         if ($request->has('latitud_llegada'))  $trabajo->latitud_llegada  = $request->latitud_llegada;
         if ($request->has('longitud_llegada')) $trabajo->longitud_llegada = $request->longitud_llegada;
+        if ($request->has('motivo_rechazo'))       $trabajo->motivo_rechazo       = $request->motivo_rechazo;
+        if ($request->has('rechazado_por_nombre')) $trabajo->rechazado_por_nombre = $request->rechazado_por_nombre;
         $trabajo->save();
         return response()->json($trabajo);
     }
@@ -177,3 +189,4 @@ class TrabajoController extends Controller
         return response()->json(['message' => 'Solicitud eliminada.'], 200);
     }
 }
+

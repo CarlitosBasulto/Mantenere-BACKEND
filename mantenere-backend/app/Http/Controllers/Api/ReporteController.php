@@ -26,6 +26,7 @@ class ReporteController extends Controller
     // Crear un reporte nuevo (Cuando el Técnico envía el formulario de finalización)
     public function store(Request $request)
     {
+        @ini_set('memory_limit', '256M');
         // 1. Validar los datos de texto
         $request->validate([
             'trabajo_id' => 'required|exists:trabajos,id',
