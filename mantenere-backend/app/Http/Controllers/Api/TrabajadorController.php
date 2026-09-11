@@ -17,7 +17,12 @@ class TrabajadorController extends Controller
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
 
-        $query = Trabajador::with('user');
+        $query = Trabajador::with('user')
+            ->where(function ($q) {
+                $q->whereNull('es_proveedor')
+                  ->orWhere('es_proveedor', false)
+                  ->orWhere('es_proveedor', 0);
+            });
 
         if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);

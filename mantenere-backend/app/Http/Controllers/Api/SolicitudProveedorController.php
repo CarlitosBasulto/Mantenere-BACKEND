@@ -158,22 +158,27 @@ class SolicitudProveedorController extends Controller
         );
 
         $user->role_id = $roleProveedor->id;
+        $user->admin_autonomo_id = null;
         $user->save();
 
         // Buscar o crear registro de Trabajador para este Proveedor
         $trabajadorProveedor = Trabajador::where('user_id', $user->id)->first();
         if (!$trabajadorProveedor) {
             $trabajadorProveedor = Trabajador::create([
-                'nombre' => $user->name,
-                'correo' => $user->email,
-                'user_id' => $user->id,
-                'puesto' => 'Técnico Proveedor (' . $solicitud->nombre_empresa . ')',
-                'estado' => 'Disponible',
-                'es_proveedor' => true
+                'nombre'            => $user->name,
+                'correo'            => $user->email,
+                'user_id'           => $user->id,
+                'puesto'            => 'Técnico Proveedor (' . $solicitud->nombre_empresa . ')',
+                'estado'            => 'Disponible',
+                'es_proveedor'      => true,
+                'admin_autonomo_id' => null,
+                'creador_id'        => null,
             ]);
         } else {
-            $trabajadorProveedor->puesto = 'Técnico Proveedor (' . $solicitud->nombre_empresa . ')';
-            $trabajadorProveedor->es_proveedor = true;
+            $trabajadorProveedor->puesto            = 'Técnico Proveedor (' . $solicitud->nombre_empresa . ')';
+            $trabajadorProveedor->es_proveedor      = true;
+            $trabajadorProveedor->admin_autonomo_id = null;
+            $trabajadorProveedor->creador_id        = null;
             $trabajadorProveedor->save();
         }
 

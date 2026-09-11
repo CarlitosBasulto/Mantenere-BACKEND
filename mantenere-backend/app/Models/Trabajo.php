@@ -46,6 +46,11 @@ class Trabajo extends Model
         return $this->hasOne(MantenimientoSolicitud::class, 'visita_trabajo_id');
     }
 
+    public function cotizaciones()
+    {
+        return $this->hasMany(Cotizacion::class);
+    }
+
     public function mantenimientoSolicitudReparacion()
     {
         return $this->hasOne(MantenimientoSolicitud::class, 'reparacion_trabajo_id');

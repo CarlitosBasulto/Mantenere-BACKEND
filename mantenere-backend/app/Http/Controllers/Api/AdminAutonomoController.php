@@ -116,6 +116,11 @@ class AdminAutonomoController extends Controller
     {
         $trabajadores = Trabajador::with('user')
             ->where('admin_autonomo_id', $id)
+            ->where(function ($q) {
+                $q->whereNull('es_proveedor')
+                  ->orWhere('es_proveedor', false)
+                  ->orWhere('es_proveedor', 0);
+            })
             ->get();
         return response()->json($trabajadores);
     }

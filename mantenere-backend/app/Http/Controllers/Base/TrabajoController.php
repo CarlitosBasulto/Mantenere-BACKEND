@@ -89,5 +89,58 @@ class TrabajoController extends Controller
         $trabajo->delete();
         return response()->json(['message' => 'Solicitud eliminada.'], 200);
     }
-}
 
+    public function update(Request $request, $id)
+    {
+        $trabajo = Trabajo::whereNull('admin_autonomo_id')->findOrFail($id);
+        $trabajo->update($request->all());
+        return response()->json($trabajo);
+    }
+
+    public function asignarTrabajador(Request $request, $id)
+    {
+        $request->validate([
+            'trabajador_id' => 'nullable|exists:trabajadores,id'
+        ]);
+
+        $trabajo = Trabajo::whereNull('admin_autonomo_id')->findOrFail($id);
+        $trabajo->trabajador_id = $request->trabajador_id;
+
+        if ($request->trabajador_id) {
+            $trabajo->motivo_rechazo = null;
+            $trabajo->rechazado_por_nombre = null;
+            if ($trabajo->estado === 'Pendiente') {
+                $trabajo->estado = 'Solicitud';
+            }
+        }
+
+        $trabajo->save();
+        return response()->json($trabajo);
+    }
+
+    public function cambiarEstado(Request $request, $id)
+    {
+        $request->validate([
+            'estado' => 'required|string',
+            'visitado' => 'nullable|boolean',
+            'hora_llegada' => 'nullable|string',
+            'latitud_llegada' => 'nullable|string',
+            'longitud_llegada' => 'nullable|string',
+            'motivo_rechazo' => 'nullable|string',
+            'rechazado_por_nombre' => 'nullable|string',
+        ]);
+
+        $trabajo = Trabajo::whereNull('admin_autonomo_id')->findOrFail($id);
+        $trabajo->estado = $request->estado;
+        if ($request->has('visitado')) $trabajo->visitado = $request->visitado;
+        if ($request->has('hora_llegada')) $trabajo->hora_llegada = $request->hora_llegada;
+        if ($request->has('latitud_llegada')) $trabajo->latitud_llegada = $request->latitud_llegada;
+        if ($request->has('longitud_llegada')) $trabajo->longitud_llegada = $request->longitud_llegada;
+        if ($request->has('motivo_rechazo')) $trabajo->motivo_rechazo = $request->motivo_rechazo;
+        if ($request->has('rechazado_por_nombre')) $trabajo->rechazado_por_nombre = $request->rechazado_por_nombre;
+
+        $trabajo->save();
+        return response()->json($trabajo);
+    }
+
+}

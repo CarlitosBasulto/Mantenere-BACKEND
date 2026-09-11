@@ -28,7 +28,13 @@ class TrabajadorController extends Controller
         $user     = $request->user();
         $roleName = strtolower($user->role->name);
 
-        $query = Trabajador::with('user')->whereNotNull('admin_autonomo_id');
+        $query = Trabajador::with('user')
+            ->whereNotNull('admin_autonomo_id')
+            ->where(function ($q) {
+                $q->whereNull('es_proveedor')
+                  ->orWhere('es_proveedor', false)
+                  ->orWhere('es_proveedor', 0);
+            });
 
         if (in_array($roleName, ['root', 'admin'])) {
             // Sin filtro: supervisa todo

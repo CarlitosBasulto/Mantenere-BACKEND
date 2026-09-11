@@ -19,7 +19,13 @@ class TrabajadorController extends Controller
     public function index(Request $request)
     {
         // Admin base solo ve técnicos sin creador_id autónomo (creados por el sistema base)
-        $query = Trabajador::with('user')->whereNull('creador_id');
+        $query = Trabajador::with('user')
+            ->whereNull('creador_id')
+            ->where(function ($q) {
+                $q->whereNull('es_proveedor')
+                  ->orWhere('es_proveedor', false)
+                  ->orWhere('es_proveedor', 0);
+            });
 
         return response()->json($query->get());
     }
