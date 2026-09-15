@@ -146,10 +146,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get ('reportes/trabajo/{trabajo_id}', [ReporteController::class, 'showByTrabajo']);
     Route::post('reportes',                      [ReporteController::class, 'store']);
 
-    // 💰 Cotizaciones
     Route::get   ('cotizaciones/trabajo/{trabajo_id}', [CotizacionController::class, 'showByTrabajo']);
     Route::post  ('cotizaciones',                      [CotizacionController::class, 'store']);
-    Route::put   ('cotizaciones/{id}',                 [CotizacionController::class, 'update']);
+    Route::match(['put', 'post'], 'cotizaciones/{id}', [CotizacionController::class, 'update']);
     Route::put   ('cotizaciones/{id}/estado',          [CotizacionController::class, 'updateStatus']);
     Route::delete('cotizaciones/{id}',                 [CotizacionController::class, 'destroy']);
 
