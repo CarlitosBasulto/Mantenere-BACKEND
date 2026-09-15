@@ -110,13 +110,19 @@ class TrabajoController extends Controller
         // Detectar si quien crea es Admin Autónomo
         $authUser = $request->user();
         $adminAutonomoId = null;
-        if ($authUser && $authUser->role && (strtolower($authUser->role->name) === 'propietario-autonomo' || strtolower($authUser->role->name) === 'administrador-general')) {
+        if ($authUser && $authUser->role && in_array(strtolower($authUser->role->name), ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo'])) {
             $adminAutonomoId = $authUser->admin_autonomo_id ?? $authUser->id;
         } else {
-            // Heredar admin_autonomo_id del negocio si aplica (ej. creado por un encargado)
-            $negocio = \App\Models\Negocio::find($request->negocio_id);
-            if ($negocio && $negocio->admin_autonomo_id) {
-                $adminAutonomoId = $negocio->admin_autonomo_id;
+            $negocio = \App\Models\Negocio::with('user.role')->find($request->negocio_id);
+            if ($negocio) {
+                if ($negocio->admin_autonomo_id) {
+                    $adminAutonomoId = $negocio->admin_autonomo_id;
+                } elseif ($negocio->user) {
+                    $ownerRole = strtolower($negocio->user->role->name ?? '');
+                    if (in_array($ownerRole, ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo'])) {
+                        $adminAutonomoId = $negocio->user->admin_autonomo_id ?? $negocio->user->id;
+                    }
+                }
             }
         }
 

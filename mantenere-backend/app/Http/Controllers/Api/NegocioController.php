@@ -47,7 +47,7 @@ class NegocioController extends Controller
         ]);
 
         // Admin Autónomo o Gerente General solo ve SUS negocios
-        if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
+        if (in_array($roleName, ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo'])) {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
         } elseif ($roleName === 'gerente-sucursal') {
             $query->where('id', $user->negocio_id);
@@ -149,7 +149,7 @@ class NegocioController extends Controller
 
         $myLevel = $user && $user->role ? $user->role->hierarchy_level : 0;
 
-        if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
+        if (in_array($roleName, ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo'])) {
             $data['admin_autonomo_id'] = $user->admin_autonomo_id ?? $user->id;
         }
 
@@ -284,6 +284,10 @@ class NegocioController extends Controller
                                      ->where('role_id', $roleEncargado->id)
                                      ->first();
         $plainPassword = $request->password;
+          if (!$negocio->admin_autonomo_id && $negocio->user_id) {
+              $negocio->admin_autonomo_id = $negocio->user?->admin_autonomo_id ?? $negocio->user_id;
+              $negocio->save();
+          }
         if ($encargado) {
             // Actualizar datos
             $encargado->update([

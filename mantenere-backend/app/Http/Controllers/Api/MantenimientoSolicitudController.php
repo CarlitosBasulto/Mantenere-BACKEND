@@ -75,41 +75,83 @@ class MantenimientoSolicitudController extends Controller
         ]);
 
         // Notificar al Encargado y Admin Autónomo
-        $negocio = \App\Models\Negocio::with(['encargados'])->find($request->negocio_id);
+        $negocio = \App\Models\Negocio::with(['encargados', 'user.role'])->find($request->negocio_id);
         if ($negocio) {
             $solicitud->load('levantamientoEquipo');
             $equipoNombre = $solicitud->levantamientoEquipo->nombre ?? 'Equipo';
-            $mensaje = "El cliente ha creado una nueva solicitud de mantenimiento para el equipo: " . $equipoNombre . " en la sucursal " . $negocio->nombre . ".";
+            $mensaje = "Se ha reportado un problema/mantenimiento para el equipo: " . $equipoNombre . " en la sucursal " . $negocio->nombre . ".";
 
-            if ($negocio->admin_autonomo_id) {
-                $ecosistemaUsers = \App\Models\User::where('admin_autonomo_id', $negocio->admin_autonomo_id)
-                    ->whereHas('role', function($query) {
-                        $query->whereIn('name', ['propietario-autonomo', 'administrador-general']);
-                    })
-                    ->orWhere('id', $negocio->admin_autonomo_id)
-                    ->get();
+            $adminAutonomoId = $negocio->admin_autonomo_id;
+            if (!$adminAutonomoId && $negocio->user) {
+                $ownerRole = strtolower($negocio->user->role->name ?? '');
+                if (in_array($ownerRole, ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo'])) {
+                    $adminAutonomoId = $negocio->user->admin_autonomo_id ?? $negocio->user->id;
+                }
+            }
+
+            if ($adminAutonomoId) {
+                $ecosistemaUsers = \App\Models\User::where(function($q) use ($adminAutonomoId) {
+                    $q->where('id', $adminAutonomoId)
+                      ->orWhere(function($sub) use ($adminAutonomoId) {
+                          $sub->where('admin_autonomo_id', $adminAutonomoId)
+                              ->whereHas('role', function($query) {
+                                  $query->whereIn('name', ['propietario-autonomo', 'administrador-general', 'gerente-general', 'admin-autonomo', 'autonomo']);
+                              });
+                      });
+                })->get();
 
                 foreach ($ecosistemaUsers as $ecoUser) {
-                    Notificacion::create([
+                    $notif = Notificacion::create([
                         'user_id' => $ecoUser->id,
-                        'titulo' => 'NUEVA SOLICITUD ✨',
+                        'titulo' => 'NUEVA SOLICITUD 🛠️',
                         'mensaje' => $mensaje,
                         'tipo' => 'mantenimiento',
                         'enlace' => '/autonomo/mantenimiento-detalle/' . $solicitud->id,
                         'leido' => false,
                     ]);
+                    try {
+                        broadcast(new \App\Events\NotificationSent($notif));
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Error broadcasting notification: " . $e->getMessage());
+                    }
+                }
+            } else {
+                $baseAdmins = \App\Models\User::whereHas('role', function($q) {
+                    $q->whereIn('name', ['Admin', 'admin', 'root']);
+                })->get();
+                foreach ($baseAdmins as $bAdmin) {
+                    $notif = Notificacion::create([
+                        'user_id' => $bAdmin->id,
+                        'titulo' => 'NUEVA SOLICITUD 🛠️',
+                        'mensaje' => $mensaje,
+                        'tipo' => 'mantenimiento',
+                        'enlace' => '/menu/mantenimiento-detalle/' . $solicitud->id,
+                        'leido' => false,
+                    ]);
+                    try {
+                        broadcast(new \App\Events\NotificationSent($notif));
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning("Error broadcasting notification: " . $e->getMessage());
+                    }
                 }
             }
 
+            $authUserId = $request->user()?->id ?? $request->cliente_id;
             foreach ($negocio->encargados as $encargado) {
-                Notificacion::create([
+                if ($encargado->id == $authUserId) continue;
+                $notif = Notificacion::create([
                     'user_id' => $encargado->id,
-                    'titulo' => 'NUEVA SOLICITUD ✨',
+                    'titulo' => 'NUEVA SOLICITUD 🛠️',
                     'mensaje' => $mensaje,
                     'tipo' => 'mantenimiento',
-                    'enlace' => '/encargado/mantenimiento-detalle/' . $solicitud->id,
+                    'enlace' => '/gerente-sucursal/mantenimiento-detalle/' . $solicitud->id,
                     'leido' => false,
                 ]);
+                try {
+                    broadcast(new \App\Events\NotificationSent($notif));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Error broadcasting notification: " . $e->getMessage());
+                }
             }
         }
 

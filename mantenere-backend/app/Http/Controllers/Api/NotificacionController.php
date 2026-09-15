@@ -81,6 +81,11 @@ class NotificacionController extends Controller
      * 📣 5. Notificar a todos los usuarios de un ROL específico (p.ej. 'admin', 'tecnico', 'cliente')
      * Soporta diferentes ecosistemas y variantes de nombres de rol (Admin, tecnico-normal, etc.)
      */
+    /**
+     * Notificar a todos los usuarios de un ROL específico con aislamiento por ecosistema/tenant
+     * Si el evento pertenece a un negocio autónomo o el usuario es autónomo, solo notifica a ese tenant.
+     * Si el evento es del sistema central/base, solo notifica al admin/usuarios base.
+     */
     public function notifyByRole(Request $request)
     {
         $request->validate([
@@ -88,23 +93,100 @@ class NotificacionController extends Controller
             'titulo' => 'required|string',
             'mensaje' => 'required|string',
             'enlace' => 'nullable|string',
+            'negocio_id' => 'nullable|integer',
+            'admin_autonomo_id' => 'nullable|integer',
         ]);
 
         $roleInput = strtolower($request->role);
-        
-        if ($roleInput === 'admin') {
-            $rolesToNotify = ['Admin', 'admin', 'propietario-autonomo', 'administrador-general'];
-        } elseif ($roleInput === 'cliente') {
-            $rolesToNotify = ['Cliente', 'cliente', 'gerente-sucursal'];
-        } elseif ($roleInput === 'tecnico') {
-            $rolesToNotify = ['tecnico-normal', 'tecnico-autonomo', 'tecnico', 'Tecnico'];
-        } else {
-            $rolesToNotify = [$request->role, ucfirst($roleInput), strtolower($request->role)];
+        $authUser = $request->user();
+
+        // 1. Determinar el contexto del ecosistema (admin_autonomo_id)
+        $adminAutonomoId = $request->admin_autonomo_id;
+
+        if (!$adminAutonomoId && $request->negocio_id) {
+            $negocio = \App\Models\Negocio::with('user.role')->find($request->negocio_id);
+            if ($negocio) {
+                if ($negocio->admin_autonomo_id) {
+                    $adminAutonomoId = $negocio->admin_autonomo_id;
+                } elseif ($negocio->user) {
+                    $ownerRole = strtolower($negocio->user->role->name ?? '');
+                    if (in_array($ownerRole, ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo'])) {
+                        $adminAutonomoId = $negocio->user->admin_autonomo_id ?? $negocio->user->id;
+                    }
+                }
+            }
         }
 
-        $users = \App\Models\User::whereHas('role', function ($query) use ($rolesToNotify) {
-            $query->whereIn('name', $rolesToNotify);
-        })->get();
+        if (!$adminAutonomoId && $authUser) {
+            $authRole = strtolower($authUser->role->name ?? '');
+            if (in_array($authRole, ['propietario-autonomo', 'administrador-general', 'admin-autonomo', 'autonomo', 'gerente-sucursal', 'tecnico-autonomo'])) {
+                $adminAutonomoId = $authUser->admin_autonomo_id ?? (in_array($authRole, ['propietario-autonomo', 'autonomo', 'admin-autonomo']) ? $authUser->id : null);
+                if (!$adminAutonomoId && $authUser->negocio_id) {
+                    $neg = \App\Models\Negocio::find($authUser->negocio_id);
+                    $adminAutonomoId = $neg?->admin_autonomo_id ?? $neg?->user_id;
+                }
+            }
+        }
+
+        // 2. Filtrar los destinatarios según el rol pedido Y el ecosistema correspondiente
+        $usersQuery = \App\Models\User::query();
+
+        if ($roleInput === 'admin') {
+            if ($adminAutonomoId) {
+                // NOTIFICAR EXCLUSIVAMENTE AL ECOSISTEMA AUTÓNOMO (Propietario y su Administrador General)
+                $usersQuery->where(function ($q) use ($adminAutonomoId) {
+                    $q->where('id', $adminAutonomoId)
+                      ->orWhere(function ($sub) use ($adminAutonomoId) {
+                          $sub->where('admin_autonomo_id', $adminAutonomoId)
+                              ->whereHas('role', function ($r) {
+                                  $r->whereIn('name', ['propietario-autonomo', 'administrador-general', 'gerente-general', 'admin-autonomo', 'autonomo']);
+                              });
+                      });
+                });
+            } else {
+                // NOTIFICAR EXCLUSIVAMENTE AL ADMIN BASE (Central)
+                $usersQuery->whereHas('role', function ($q) {
+                    $q->whereIn('name', ['Admin', 'admin', 'root']);
+                });
+            }
+        } elseif ($roleInput === 'cliente') {
+            if ($adminAutonomoId) {
+                if ($request->negocio_id) {
+                    $usersQuery->where('negocio_id', $request->negocio_id);
+                } else {
+                    $usersQuery->where('admin_autonomo_id', $adminAutonomoId)
+                        ->whereHas('role', function ($q) {
+                            $q->whereIn('name', ['gerente-sucursal', 'encargado', 'cliente', 'Cliente']);
+                        });
+                }
+            } else {
+                $usersQuery->whereHas('role', function ($q) {
+                    $q->whereIn('name', ['Cliente', 'cliente']);
+                });
+            }
+        } elseif ($roleInput === 'tecnico') {
+            if ($adminAutonomoId) {
+                $usersQuery->where('admin_autonomo_id', $adminAutonomoId)
+                    ->whereHas('role', function ($q) {
+                        $q->whereIn('name', ['tecnico-autonomo']);
+                    });
+            } else {
+                $usersQuery->whereHas('role', function ($q) {
+                    $q->whereIn('name', ['tecnico-normal', 'tecnico', 'Tecnico']);
+                });
+            }
+        } else {
+            $usersQuery->whereHas('role', function ($q) use ($request, $roleInput) {
+                $q->whereIn('name', [$request->role, ucfirst($roleInput), strtolower($request->role)]);
+            });
+            if ($adminAutonomoId) {
+                $usersQuery->where(function($q) use ($adminAutonomoId) {
+                    $q->where('admin_autonomo_id', $adminAutonomoId)->orWhere('id', $adminAutonomoId);
+                });
+            }
+        }
+
+        $users = $usersQuery->get();
 
         $notifications = [];
         foreach ($users as $user) {
@@ -125,7 +207,8 @@ class NotificacionController extends Controller
 
         return response()->json([
             'message' => 'Notificaciones enviadas al rol ' . $request->role,
-            'count' => count($notifications)
+            'count' => count($notifications),
+            'admin_autonomo_id' => $adminAutonomoId
         ]);
     }
 
