@@ -18,9 +18,12 @@ class TrabajadorController extends Controller
 {
     private function resolveAdminId($user): ?int
     {
-        return strtolower($user->role->name) === 'propietario-autonomo'
-            ? $user->id
-            : ($user->admin_autonomo_id ?? null);
+        if (!$user) return null;
+        $roleName = strtolower($user->role->name ?? '');
+        if (in_array($roleName, ['propietario-autonomo', 'admin-autonomo', 'autonomo'])) {
+            return $user->id;
+        }
+        return $user->admin_autonomo_id ?? $user->id;
     }
 
     public function index(Request $request)
@@ -28,7 +31,7 @@ class TrabajadorController extends Controller
         $user     = $request->user();
         $roleName = strtolower($user->role->name);
 
-        $query = Trabajador::with('user')->whereNotNull('admin_autonomo_id');
+        $query = Trabajador::with(['user:id,name,email,telefono,role_id,active,admin_autonomo_id'])->whereNotNull('admin_autonomo_id');
 
         if (in_array($roleName, ['root', 'admin'])) {
             // Sin filtro: supervisa todo
@@ -104,7 +107,7 @@ class TrabajadorController extends Controller
             'rfc'               => $request->rfc,
         ]);
 
-        return response()->json($trabajador, 201);
+        return response()->json($trabajador->load('user:id,name,email,telefono,role_id,active,admin_autonomo_id'), 201);
     }
 
     public function toggleEstado($id)
