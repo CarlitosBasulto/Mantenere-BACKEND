@@ -22,7 +22,7 @@ class TrabajoController extends Controller
         $relations = $isTechnician
             ? [
                 'trabajador:id,nombre,correo,user_id,telefono',
-                'negocio:id,nombre,calle,colonia,ciudad,admin_autonomo_id',
+                'negocio:id,nombre,calle,colonia,ciudad,admin_autonomo_id,latitud,longitud',
                 'reporte:id,trabajo_id,fecha,descripcion'
               ]
             : ['trabajador', 'negocio', 'reporte'];
