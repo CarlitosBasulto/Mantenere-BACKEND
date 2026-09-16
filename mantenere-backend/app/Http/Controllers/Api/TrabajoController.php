@@ -14,7 +14,18 @@ class TrabajoController extends Controller
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
 
-        $query = Trabajo::with(['trabajador', 'negocio', 'reporte'])->orderBy('created_at', 'desc');
+        $isTechnician = in_array($roleName, ['tecnico-autonomo', 'tecnico-normal', 'tecnico', 'tecnico-proveedor']);
+
+        // Para técnicos, optimizamos las relaciones para no arrastrar cadenas gigantes de base64 en reportes
+        $relations = $isTechnician
+            ? [
+                'trabajador:id,nombre,correo,user_id,telefono',
+                'negocio:id,nombre,calle,colonia,ciudad,admin_autonomo_id',
+                'reporte:id,trabajo_id,fecha,descripcion'
+              ]
+            : ['trabajador', 'negocio', 'reporte'];
+
+        $query = Trabajo::with($relations)->orderBy('created_at', 'desc');
 
         if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
@@ -28,6 +39,18 @@ class TrabajoController extends Controller
             $negociosIds = \App\Models\Negocio::where('user_id', $user->id)
                 ->pluck('id');
             $query->whereIn('negocio_id', $negociosIds);
+        } elseif ($isTechnician) {
+            $trabajador = $user->trabajador ?? \App\Models\Trabajador::where('user_id', $user->id)->orWhere('correo', $user->email)->first();
+            $trabajadorId = $trabajador ? $trabajador->id : null;
+            $query->where(function($q) use ($trabajadorId, $user) {
+                if ($trabajadorId) {
+                    $q->where('trabajador_id', $trabajadorId);
+                }
+                $q->orWhere('trabajador_id', $user->id);
+            });
+            if ($roleName === 'tecnico-autonomo' && !empty($user->admin_autonomo_id)) {
+                $query->where('admin_autonomo_id', $user->admin_autonomo_id);
+            }
         }
         
         // Filtros dinámicos recibidos por query parameters

@@ -33,7 +33,16 @@ class TrabajoController extends Controller
         $user     = $request->user();
         $roleName = strtolower($user->role->name);
 
-        $query = Trabajo::with(['trabajador', 'negocio.encargados', 'reporte'])
+        $isTechnician = in_array($roleName, ['tecnico-autonomo', 'tecnico', 'tecnico-normal', 'tecnico-proveedor']);
+        $relations = $isTechnician
+            ? [
+                'trabajador:id,nombre,correo,user_id,telefono',
+                'negocio.encargados',
+                'reporte:id,trabajo_id,fecha,descripcion'
+              ]
+            : ['trabajador', 'negocio.encargados', 'reporte'];
+
+        $query = Trabajo::with($relations)
             ->whereNotNull('admin_autonomo_id')
             ->orderBy('created_at', 'desc');
 
@@ -44,8 +53,21 @@ class TrabajoController extends Controller
             if ($user->negocio_id) {
                 $query->where('negocio_id', $user->negocio_id);
             }
+        } elseif ($isTechnician) {
+            $trabajador = $user->trabajador ?? \App\Models\Trabajador::where('user_id', $user->id)->orWhere('correo', $user->email)->first();
+            $trabajadorId = $trabajador ? $trabajador->id : null;
+            $query->where(function($q) use ($trabajadorId, $user) {
+                if ($trabajadorId) {
+                    $q->where('trabajador_id', $trabajadorId);
+                }
+                $q->orWhere('trabajador_id', $user->id);
+            });
+            $adminId = $this->resolveAdminId($user);
+            if ($adminId) {
+                $query->where('admin_autonomo_id', $adminId);
+            }
         } else {
-            // propietario-autonomo, administrador-general, tecnico-autonomo
+            // propietario-autonomo, administrador-general
             $adminId = $this->resolveAdminId($user);
             if ($adminId) {
                 $query->where('admin_autonomo_id', $adminId);

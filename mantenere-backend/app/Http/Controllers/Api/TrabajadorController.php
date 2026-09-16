@@ -17,7 +17,12 @@ class TrabajadorController extends Controller
         $user = $request->user();
         $roleName = $user && $user->role ? strtolower($user->role->name) : '';
 
-        $query = Trabajador::with('user');
+        $isTechnician = in_array($roleName, ['tecnico-autonomo', 'tecnico-normal', 'tecnico', 'tecnico-proveedor']);
+        $userRelation = $isTechnician
+            ? ['user:id,name,email,telefono,role_id,active,admin_autonomo_id']
+            : ['user'];
+
+        $query = Trabajador::with($userRelation);
 
         if ($roleName === 'propietario-autonomo' || $roleName === 'administrador-general') {
             $query->where('admin_autonomo_id', $user->admin_autonomo_id ?? $user->id);
@@ -34,6 +39,10 @@ class TrabajadorController extends Controller
             // Admin principal solo ve los técnicos creados por él mismo o el sistema (creador_id nulo)
             // Cuando comparte un técnico, creador_id sigue siendo null, por lo que no lo pierde de vista.
             $query->whereNull('creador_id');
+        } elseif ($isTechnician) {
+            $query->where(function($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('correo', $user->email);
+            });
         }
 
         return response()->json($query->get());

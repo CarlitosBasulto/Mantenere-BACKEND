@@ -39,6 +39,10 @@ class TrabajadorController extends Controller
             // Gerente ve técnicos de su ecosistema
             $adminId = $this->resolveAdminId($user);
             if ($adminId) $query->where('admin_autonomo_id', $adminId);
+        } elseif (in_array($roleName, ['tecnico-autonomo', 'tecnico', 'tecnico-normal', 'tecnico-proveedor'])) {
+            $query->where(function($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('correo', $user->email);
+            });
         } else {
             $adminId = $this->resolveAdminId($user);
             if ($adminId) $query->where('admin_autonomo_id', $adminId);

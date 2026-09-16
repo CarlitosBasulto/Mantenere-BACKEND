@@ -18,7 +18,16 @@ class TrabajoController extends Controller
         $user     = $request->user();
         $roleName = strtolower($user->role->name);
 
-        $query = Trabajo::with(['trabajador', 'negocio', 'reporte'])
+        $isTechnician = in_array($roleName, ['tecnico-normal', 'tecnico', 'tecnico-proveedor', 'tecnico-autonomo']);
+        $relations = $isTechnician
+            ? [
+                'trabajador:id,nombre,correo,user_id,telefono',
+                'negocio:id,nombre,calle,colonia,ciudad,admin_autonomo_id',
+                'reporte:id,trabajo_id,fecha,descripcion'
+              ]
+            : ['trabajador', 'negocio', 'reporte'];
+
+        $query = Trabajo::with($relations)
             ->whereNull('admin_autonomo_id')
             ->orderBy('created_at', 'desc');
 
@@ -28,6 +37,15 @@ class TrabajoController extends Controller
                 ->orWhere('encargado', $user->name)
                 ->pluck('id');
             $query->whereIn('negocio_id', $negociosIds);
+        } elseif ($isTechnician) {
+            $trabajador = $user->trabajador ?? \App\Models\Trabajador::where('user_id', $user->id)->orWhere('correo', $user->email)->first();
+            $trabajadorId = $trabajador ? $trabajador->id : null;
+            $query->where(function($q) use ($trabajadorId, $user) {
+                if ($trabajadorId) {
+                    $q->where('trabajador_id', $trabajadorId);
+                }
+                $q->orWhere('trabajador_id', $user->id);
+            });
         }
 
         // Filtros dinámicos
